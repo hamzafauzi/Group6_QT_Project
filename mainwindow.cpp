@@ -1,14 +1,241 @@
 #include "mainwindow.h"
-#include "./ui_mainwindow.h"
+#include <QFont>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
-    , ui(new Ui::MainWindow)
+    , isCompilationSuccessful(false)
 {
-    ui->setupUi(this);
+    setupUI();
 }
 
 MainWindow::~MainWindow()
 {
-    delete ui;
+    // Qt handles cleanup automatically for child widgets
+}
+
+void MainWindow::setupUI()
+{
+    // Set window properties
+    setWindowTitle("Arduino Simulator - Qt6 - Group6");
+    resize(2000, 2000);
+
+    // Create central widget
+    QWidget *centralWidget = new QWidget(this);
+    setCentralWidget(centralWidget);
+
+    // Create main vertical layout
+    QVBoxLayout *mainLayout = new QVBoxLayout(centralWidget);
+    mainLayout->setSpacing(5);
+    mainLayout->setContentsMargins(10, 10, 10, 10);
+
+    // Add all sections
+    createControlPanel(mainLayout);
+    createMiddleSection(mainLayout);
+    createDebugPanel(mainLayout);
+
+    // Initialize
+    logMessage("Arduino Simulator initialized. Ready to build.");
+}
+
+void MainWindow::createControlPanel(QVBoxLayout *mainLayout)
+{
+    // Create control panel widget
+    QWidget *controlPanel = new QWidget();
+    controlPanel->setMaximumHeight(60);
+    controlPanel->setStyleSheet("background-color: #e0e0e0; border-radius: 5px;");
+
+    // Create horizontal layout for buttons
+    QHBoxLayout *controlLayout = new QHBoxLayout(controlPanel);
+    controlLayout->setContentsMargins(10, 10, 10, 10);
+
+    // Create Build button
+    buildButton = new QPushButton("Build");
+    buildButton->setMinimumHeight(40);
+    buildButton->setStyleSheet(
+        "QPushButton {"
+        "   background-color: #4CAF50;"
+        "   color: white;"
+        "   font-size: 14px;"
+        "   font-weight: bold;"
+        "   border-radius: 5px;"
+        "   padding: 5px 15px;"
+        "}"
+        "QPushButton:hover {"
+        "   background-color: #45a049;"
+        "}"
+        "QPushButton:pressed {"
+        "   background-color: #3d8b40;"
+        "}"
+        );
+    connect(buildButton, &QPushButton::clicked, this, &MainWindow::onBuildClicked);
+
+    // Create Run button
+    runButton = new QPushButton("Run");
+    runButton->setMinimumHeight(40);
+    runButton->setEnabled(true);
+    runButton->setStyleSheet(
+        "QPushButton {"
+        "   background-color: #2196F3;"
+        "   color: white;"
+        "   font-size: 14px;"
+        "   font-weight: bold;"
+        "   border-radius: 5px;"
+        "   padding: 5px 15px;"
+        "}"
+        "QPushButton:hover:enabled {"
+        "   background-color: #0b7dda;"
+        "}"
+        "QPushButton:pressed:enabled {"
+        "   background-color: #0968b8;"
+        "}"
+        "QPushButton:disabled {"
+        "   background-color: #cccccc;"
+        "   color: #666666;"
+        "}"
+        );
+    connect(runButton, &QPushButton::clicked, this, &MainWindow::onRunClicked);
+
+    // Add buttons to layout
+    controlLayout->addWidget(buildButton);
+    controlLayout->addWidget(runButton);
+    controlLayout->addStretch(); // Push buttons to the left
+
+    // Add control panel to main layout
+    mainLayout->addWidget(controlPanel);
+}
+
+void MainWindow::createMiddleSection(QVBoxLayout *mainLayout)
+{
+    // Create horizontal splitter for code editor and simulator
+    QSplitter *splitter = new QSplitter(Qt::Horizontal);
+
+    // Create code editor
+    codeEditor = new QTextEdit();
+    QFont monoFont("Courier");
+    monoFont.setPointSize(12);
+    codeEditor->setFont(monoFont);
+    codeEditor->setStyleSheet(
+        "QTextEdit {"
+        "   background-color: #1e1e1e;"
+        "   color: #d4d4d4;"
+        "   border: 1px solid #555555;"
+        "   border-radius: 5px;"
+        "   padding: 5px;"
+        "}"
+        );
+
+    // Add sample Arduino code
+    codeEditor->setPlainText(
+        "void setup() {\n"
+        "  pinMode(13, OUTPUT);\n"
+        "}\n\n"
+        "void loop() {\n"
+        "  digitalWrite(13, HIGH);\n"
+        "  delay(1000);\n"
+        "  digitalWrite(13, LOW);\n"
+        "  delay(1000);\n"
+        "}"
+        );
+
+    // Create simulator panel
+    simulatorPanel = new QWidget();
+    simulatorPanel->setStyleSheet(
+        "QWidget {"
+        "   background-color: #f5f5f5;"
+        "   border: 2px solid #cccccc;"
+        "   border-radius: 5px;"
+        "}"
+        );
+    simulatorPanel->setMinimumWidth(400);
+
+    // Add to splitter
+    splitter->addWidget(codeEditor);
+    splitter->addWidget(simulatorPanel);
+
+    // Prevent editor from collapsing too much
+    codeEditor->setMinimumWidth(450);
+    simulatorPanel->setMinimumWidth(700);
+
+    // Gentle stretch difference (not extreme)
+    splitter->setStretchFactor(0, 2); // Code editor
+    splitter->setStretchFactor(1, 3); // Simulator
+
+    // Good initial balance
+    splitter->setSizes(QList<int>({600, 1000}));
+
+
+    // Add splitter to main layout
+    mainLayout->addWidget(splitter, 1); // Stretch factor 1
+}
+
+void MainWindow::createDebugPanel(QVBoxLayout *mainLayout)
+{
+    // Create debug output panel
+    debugOutput = new QTextBrowser();
+    debugOutput->setMaximumHeight(200);
+    debugOutput->setStyleSheet(
+        "QTextBrowser {"
+        "   background-color: #2b2b2b;"
+        "   color: #00ff00;"
+        "   font-family: 'Courier New';"
+        "   font-size: 11px;"
+        "   border: 1px solid #555555;"
+        "   border-radius: 5px;"
+        "   padding: 5px;"
+        "}"
+        );
+
+    // Add to main layout
+    mainLayout->addWidget(debugOutput);
+}
+
+void MainWindow::onBuildClicked()
+{
+    logMessage("=== Build Started ===");
+
+    // Get the code from editor
+    QString code = codeEditor->toPlainText();
+
+    if (code.trimmed().isEmpty()) {
+        logMessage("ERROR: Code editor is empty!");
+        isCompilationSuccessful = false;
+        runButton->setEnabled(false);
+        return;
+    }
+
+    logMessage("Analyzing code...");
+    logMessage("Code length: " + QString::number(code.length()) + " characters");
+
+    // TODO: In next step, we'll integrate Arduino compiler here
+    logMessage("Note: Arduino compiler integration pending.");
+    logMessage("=== Build Completed (Simulated) ===");
+
+    // For now, simulate successful compilation
+    isCompilationSuccessful = true;
+    runButton->setEnabled(true);
+    logMessage("Build successful! You can now run the simulation.");
+}
+
+void MainWindow::onRunClicked()
+{
+    if (!isCompilationSuccessful) {
+        logMessage("ERROR: Cannot run. Please build the code first.");
+        return;
+    }
+
+    logMessage("=== Simulation Started ===");
+    logMessage("Running Arduino simulation...");
+
+    // TODO: In next step, we'll implement simulation logic
+    logMessage("Simulation functionality will be implemented in next steps."); //working on it right now
+}
+
+void MainWindow::logMessage(const QString &message)
+{
+    debugOutput->append(message);
+
+    // Auto-scroll to bottom
+    QTextCursor cursor = debugOutput->textCursor();
+    cursor.movePosition(QTextCursor::End);
+    debugOutput->setTextCursor(cursor);
 }
