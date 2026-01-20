@@ -14,22 +14,19 @@ set(PROJECT_SOURCES
     main.cpp
     mainwindow.cpp
     mainwindow.h
+    component.cpp
+    component.h
+    ledcomponent.cpp
+    ledcomponent.h
+    buttoncomponent.cpp
+    buttoncomponent.h
+    resources.qrc
 )
-
-# Remove mainwindow.ui since we're building UI programmatically
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(ArduinoSimulator
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
-        resources/images/button_down.png resources/images/button_up.png resources/images/led_off.png resources/images/led_on.png resources/images/resistor.png
-        resources.qrc
-        buttoncomponent.cpp
-        component.cpp
-        ledcomponent.cpp
-        buttoncomponent.h
-        component.h
-        ledcomponent.h
     )
 else()
     if(ANDROID)
