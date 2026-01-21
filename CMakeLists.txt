@@ -35,6 +35,12 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         resistorcomponent.cpp
         simulatorpanel.cpp
         simulatorpanel.h
+        arduinoparser.h
+        arduinocompiler.h
+        simulationengine.h
+        arduinocompiler.cpp
+        arduinoparser.cpp
+        simulationengine.cpp
     )
 else()
     if(ANDROID)
