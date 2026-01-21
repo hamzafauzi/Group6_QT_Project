@@ -7,8 +7,9 @@ LEDComponent::LEDComponent(QWidget *parent)
     : Component(parent)
     , m_isOn(false)
 {
-    setFixedSize(60, 60);
+    setFixedSize(80, 100);  // Bigger size
     loadImages();
+    setStyleSheet("background: transparent;");  // No background
 }
 
 LEDComponent::~LEDComponent()
@@ -23,12 +24,11 @@ void LEDComponent::loadImages()
 
     // Check if images loaded successfully
     if (!m_ledOnImage.isNull() && !m_ledOffImage.isNull()) {
-        // Scale images to fit component size
-        m_ledOnImage = m_ledOnImage.scaled(50, 50, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-        m_ledOffImage = m_ledOffImage.scaled(50, 50, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+        // Scale images LARGER
+        m_ledOnImage = m_ledOnImage.scaled(80, 80, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+        m_ledOffImage = m_ledOffImage.scaled(80, 80, Qt::KeepAspectRatio, Qt::SmoothTransformation);
         qDebug() << "LED images loaded successfully from resources";
     } else {
-        // Fallback: create default images if loading failed
         qDebug() << "Failed to load LED images, using defaults";
         createDefaultImages();
     }
@@ -78,20 +78,15 @@ void LEDComponent::paintEvent(QPaintEvent *event)
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
 
-    // Draw border
-    painter.setPen(QPen(Qt::darkGray, 2));
-    painter.setBrush(Qt::NoBrush);
-    painter.drawRect(0, 0, width() - 1, height() - 1);
-
-    // Draw LED image
+    // Draw LED image (LARGER)
     QPixmap currentImage = m_isOn ? m_ledOnImage : m_ledOffImage;
-    painter.drawPixmap(5, 5, currentImage);
+    painter.drawPixmap(0, 0, width(), height() - 20, currentImage);  // Leave space for text
 
     // Draw pin number if assigned
     if (m_pin >= 0) {
         painter.setPen(Qt::black);
-        painter.setFont(QFont("Arial", 10, QFont::Bold));
-        painter.drawText(rect(), Qt::AlignBottom | Qt::AlignHCenter,
+        painter.setFont(QFont("Arial", 9, QFont::Bold));
+        painter.drawText(0, height() - 15, width(), 15, Qt::AlignCenter,
                          QString("Pin %1").arg(m_pin));
     }
 }

@@ -16,8 +16,8 @@ MainWindow::~MainWindow()
 void MainWindow::setupUI()
 {
     // Set window properties
-    setWindowTitle("Arduino Simulator - Qt6 - Group6");
-    resize(2000, 2000);
+    setWindowTitle("Arduino Simulator - Qt6");
+    resize(1200, 800);
 
     // Create central widget
     QWidget *centralWidget = new QWidget(this);
@@ -35,7 +35,8 @@ void MainWindow::setupUI()
 
     // Initialize
     logMessage("Arduino Simulator initialized. Ready to build.");
-     testComponents();
+
+    testComponents();
 }
 
 void MainWindow::createControlPanel(QVBoxLayout *mainLayout)
@@ -73,7 +74,7 @@ void MainWindow::createControlPanel(QVBoxLayout *mainLayout)
     // Create Run button
     runButton = new QPushButton("Run");
     runButton->setMinimumHeight(40);
-    runButton->setEnabled(true);
+    runButton->setEnabled(false);
     runButton->setStyleSheet(
         "QPushButton {"
         "   background-color: #2196F3;"
@@ -99,7 +100,7 @@ void MainWindow::createControlPanel(QVBoxLayout *mainLayout)
     // Add buttons to layout
     controlLayout->addWidget(buildButton);
     controlLayout->addWidget(runButton);
-    controlLayout->addStretch(); // Push buttons to the left
+    controlLayout->addStretch();
 
     // Add control panel to main layout
     mainLayout->addWidget(controlPanel);
@@ -112,8 +113,8 @@ void MainWindow::createMiddleSection(QVBoxLayout *mainLayout)
 
     // Create code editor
     codeEditor = new QTextEdit();
-    QFont monoFont("Courier");
-    monoFont.setPointSize(12);
+    QFont monoFont("Menlo");
+    monoFont.setPointSize(13);
     codeEditor->setFont(monoFont);
     codeEditor->setStyleSheet(
         "QTextEdit {"
@@ -121,7 +122,7 @@ void MainWindow::createMiddleSection(QVBoxLayout *mainLayout)
         "   color: #d4d4d4;"
         "   border: 1px solid #555555;"
         "   border-radius: 5px;"
-        "   padding: 5px;"
+        "   padding: 10px;"
         "}"
         );
 
@@ -142,31 +143,23 @@ void MainWindow::createMiddleSection(QVBoxLayout *mainLayout)
     simulatorPanel = new QWidget();
     simulatorPanel->setStyleSheet(
         "QWidget {"
-        "   background-color: #f5f5f5;"
-        "   border: 2px solid #cccccc;"
-        "   border-radius: 5px;"
+        "   background: qlineargradient(x1:0, y1:0, x2:0, y2:1,"
+        "                stop:0 #e8f4f8, stop:1 #d0e8f0);"
+        "   border: 2px solid #4a90a4;"
+        "   border-radius: 8px;"
         "}"
         );
-    simulatorPanel->setMinimumWidth(400);
+    simulatorPanel->setMinimumWidth(500);
 
     // Add to splitter
     splitter->addWidget(codeEditor);
     splitter->addWidget(simulatorPanel);
-
-    // Prevent editor from collapsing too much
-    codeEditor->setMinimumWidth(450);
-    simulatorPanel->setMinimumWidth(700);
-
-    // Gentle stretch difference (not extreme)
-    splitter->setStretchFactor(0, 2); // Code editor
-    splitter->setStretchFactor(1, 3); // Simulator
-
-    // Good initial balance
-    splitter->setSizes(QList<int>({600, 1000}));
-
+    splitter->setStretchFactor(0, 1);
+    splitter->setStretchFactor(1, 1);
+    splitter->setSizes(QList<int>({500, 500}));
 
     // Add splitter to main layout
-    mainLayout->addWidget(splitter, 1); // Stretch factor 1
+    mainLayout->addWidget(splitter, 1);
 }
 
 void MainWindow::createDebugPanel(QVBoxLayout *mainLayout)
@@ -178,7 +171,7 @@ void MainWindow::createDebugPanel(QVBoxLayout *mainLayout)
         "QTextBrowser {"
         "   background-color: #2b2b2b;"
         "   color: #00ff00;"
-        "   font-family: 'Courier New';"
+        "   font-family: 'Menlo';"
         "   font-size: 11px;"
         "   border: 1px solid #555555;"
         "   border-radius: 5px;"
@@ -228,7 +221,7 @@ void MainWindow::onRunClicked()
     logMessage("Running Arduino simulation...");
 
     // TODO: In next step, we'll implement simulation logic
-    logMessage("Simulation functionality will be implemented in next steps."); //working on it right now
+    logMessage("Simulation functionality will be implemented in next steps.");
 }
 
 void MainWindow::logMessage(const QString &message)
@@ -243,22 +236,22 @@ void MainWindow::logMessage(const QString &message)
 
 void MainWindow::testComponents()
 {
-    // Create test LED
+    // Create test LED with better positioning
     testLED = new LEDComponent(simulatorPanel);
-    testLED->setPosition(QPoint(50, 50));
+    testLED->setPosition(QPoint(80, 100));
     testLED->setPin(13);
     testLED->show();
 
     // Create test button
     testButton = new ButtonComponent(simulatorPanel);
-    testButton->setPosition(QPoint(150, 50));
+    testButton->setPosition(QPoint(200, 100));
     testButton->setPin(2);
     testButton->show();
 
     // Create test resistor
     testResistor = new ResistorComponent(simulatorPanel);
-    testResistor->setPosition(QPoint(250, 50));
-    testResistor->setResistance(220);  // 220 ohms
+    testResistor->setPosition(QPoint(320, 100));
+    testResistor->setResistance(220);
     testResistor->show();
 
     // Connect button to LED

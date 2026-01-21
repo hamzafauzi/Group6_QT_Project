@@ -5,10 +5,11 @@
 
 ResistorComponent::ResistorComponent(QWidget *parent)
     : Component(parent)
-    , m_resistance(220)  // Default 220 ohms
+    , m_resistance(220)
 {
-    setFixedSize(80, 40);
+    setFixedSize(120, 80);  // Bigger
     loadImage();
+    setStyleSheet("background: transparent;");
 }
 
 ResistorComponent::~ResistorComponent()
@@ -17,16 +18,12 @@ ResistorComponent::~ResistorComponent()
 
 void ResistorComponent::loadImage()
 {
-    // Try to load from Qt resources
     m_resistorImage = QPixmap(":/resources/images/resistor.png");
 
-    // Check if image loaded successfully
     if (!m_resistorImage.isNull()) {
-        // Scale image to fit component size
-        m_resistorImage = m_resistorImage.scaled(70, 30, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+        m_resistorImage = m_resistorImage.scaled(120, 60, Qt::KeepAspectRatio, Qt::SmoothTransformation);
         qDebug() << "Resistor image loaded successfully from resources";
     } else {
-        // Fallback: create default image if loading failed
         qDebug() << "Failed to load resistor image, using default";
         createDefaultImage();
     }
@@ -74,17 +71,12 @@ void ResistorComponent::paintEvent(QPaintEvent *event)
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
 
-    // Draw border
-    painter.setPen(QPen(Qt::darkGray, 2));
-    painter.setBrush(Qt::NoBrush);
-    painter.drawRect(0, 0, width() - 1, height() - 1);
-
     // Draw resistor image
-    painter.drawPixmap(5, 5, m_resistorImage);
+    painter.drawPixmap(0, 0, width(), height() - 20, m_resistorImage);
 
     // Draw resistance value
     painter.setPen(Qt::black);
-    painter.setFont(QFont("Arial", 9, QFont::Bold));
-    painter.drawText(rect(), Qt::AlignBottom | Qt::AlignHCenter,
+    painter.setFont(QFont("Arial", 10, QFont::Bold));
+    painter.drawText(0, height() - 15, width(), 15, Qt::AlignCenter,
                      QString("%1Ω").arg(m_resistance));
 }

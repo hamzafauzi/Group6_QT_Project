@@ -7,8 +7,9 @@ ButtonComponent::ButtonComponent(QWidget *parent)
     : Component(parent)
     , m_isPressed(false)
 {
-    setFixedSize(60, 60);
+    setFixedSize(80, 100);  // Bigger
     loadImages();
+    setStyleSheet("background: transparent;");
 }
 
 ButtonComponent::~ButtonComponent()
@@ -17,18 +18,14 @@ ButtonComponent::~ButtonComponent()
 
 void ButtonComponent::loadImages()
 {
-    // Try to load from Qt resources
     m_buttonUpImage = QPixmap(":/resources/images/button_up.png");
     m_buttonDownImage = QPixmap(":/resources/images/button_down.png");
 
-    // Check if images loaded successfully
     if (!m_buttonUpImage.isNull() && !m_buttonDownImage.isNull()) {
-        // Scale images to fit component size
-        m_buttonUpImage = m_buttonUpImage.scaled(50, 50, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-        m_buttonDownImage = m_buttonDownImage.scaled(50, 50, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+        m_buttonUpImage = m_buttonUpImage.scaled(80, 80, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+        m_buttonDownImage = m_buttonDownImage.scaled(80, 80, Qt::KeepAspectRatio, Qt::SmoothTransformation);
         qDebug() << "Button images loaded successfully from resources";
     } else {
-        // Fallback: create default images if loading failed
         qDebug() << "Failed to load button images, using defaults";
         createDefaultImages();
     }
@@ -98,20 +95,15 @@ void ButtonComponent::paintEvent(QPaintEvent *event)
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
 
-    // Draw border
-    painter.setPen(QPen(Qt::darkGray, 2));
-    painter.setBrush(Qt::NoBrush);
-    painter.drawRect(0, 0, width() - 1, height() - 1);
-
     // Draw button image
     QPixmap currentImage = m_isPressed ? m_buttonDownImage : m_buttonUpImage;
-    painter.drawPixmap(5, 5, currentImage);
+    painter.drawPixmap(0, 0, width(), height() - 20, currentImage);
 
     // Draw pin number if assigned
     if (m_pin >= 0) {
         painter.setPen(Qt::black);
-        painter.setFont(QFont("Arial", 10, QFont::Bold));
-        painter.drawText(rect(), Qt::AlignBottom | Qt::AlignHCenter,
+        painter.setFont(QFont("Arial", 9, QFont::Bold));
+        painter.drawText(0, height() - 15, width(), 15, Qt::AlignCenter,
                          QString("Pin %1").arg(m_pin));
     }
 }
