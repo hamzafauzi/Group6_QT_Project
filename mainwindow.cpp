@@ -35,6 +35,7 @@ void MainWindow::setupUI()
 
     // Initialize
     logMessage("Arduino Simulator initialized. Ready to build.");
+     testComponents();
 }
 
 void MainWindow::createControlPanel(QVBoxLayout *mainLayout)
@@ -238,4 +239,32 @@ void MainWindow::logMessage(const QString &message)
     QTextCursor cursor = debugOutput->textCursor();
     cursor.movePosition(QTextCursor::End);
     debugOutput->setTextCursor(cursor);
+}
+
+void MainWindow::testComponents()
+{
+    // Create test LED
+    testLED = new LEDComponent(simulatorPanel);
+    testLED->setPosition(QPoint(50, 50));
+    testLED->setPin(13);
+    testLED->show();
+
+    // Create test button
+    testButton = new ButtonComponent(simulatorPanel);
+    testButton->setPosition(QPoint(150, 50));
+    testButton->setPin(2);
+    testButton->show();
+
+    // Connect button to LED
+    connect(testButton, &ButtonComponent::buttonPressed, [this]() {
+        testLED->setState(true);
+        logMessage("Button pressed - LED ON");
+    });
+
+    connect(testButton, &ButtonComponent::buttonReleased, [this]() {
+        testLED->setState(false);
+        logMessage("Button released - LED OFF");
+    });
+
+    logMessage("Test components created: LED (Pin 13) and Button (Pin 2)");
 }
