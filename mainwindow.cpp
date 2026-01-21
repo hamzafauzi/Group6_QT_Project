@@ -284,28 +284,27 @@ void MainWindow::logMessage(const QString &message)
 
 void MainWindow::testComponents()
 {
-    // Create LED on pin 13
+    // Create LED on pin 13 - with new larger size
     testLED = new LEDComponent(simulatorPanel);
-    testLED->setPosition(QPoint(80, 100));
+    testLED->setPosition(QPoint(50, 80));  // Adjusted position
     testLED->setPin(13);
     testLED->show();
 
-    // Map pin 13 to LED component
     ledComponents[13] = testLED;
 
-    // Create button on pin 2
+    // Button
     testButton = new ButtonComponent(simulatorPanel);
-    testButton->setPosition(QPoint(200, 100));
+    testButton->setPosition(QPoint(180, 80));  // More spacing
     testButton->setPin(2);
     testButton->show();
 
-    // Create resistor
+    // Resistor
     testResistor = new ResistorComponent(simulatorPanel);
-    testResistor->setPosition(QPoint(320, 100));
+    testResistor->setPosition(QPoint(310, 80));
     testResistor->setResistance(220);
     testResistor->show();
 
-    // Manual button control (for testing)
+    // Manual button control
     connect(testButton, &ButtonComponent::buttonPressed, [this]() {
         testLED->setState(true);
         logMessage("Manual: Button pressed - LED ON");

@@ -21,8 +21,29 @@ void ResistorComponent::loadImage()
     m_resistorImage = QPixmap(":/resources/images/resistor.png");
 
     if (!m_resistorImage.isNull()) {
-        m_resistorImage = m_resistorImage.scaled(120, 60, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-        qDebug() << "Resistor image loaded successfully from resources";
+        // Remove white background if present
+        QImage img = m_resistorImage.toImage().convertToFormat(QImage::Format_ARGB32);
+
+        // Make white pixels transparent
+        for (int y = 0; y < img.height(); y++) {
+            for (int x = 0; x < img.width(); x++) {
+                QColor color(img.pixel(x, y));
+                if (color.red() > 240 && color.green() > 240 && color.blue() > 240) {
+                    img.setPixel(x, y, qRgba(0, 0, 0, 0));
+                }
+            }
+        }
+
+        m_resistorImage = QPixmap::fromImage(img);
+
+        // Scale to LARGER size with high quality
+        m_resistorImage = m_resistorImage.scaled(
+            140, 80,  // Larger size (was probably 120, 80)
+            Qt::KeepAspectRatio,
+            Qt::SmoothTransformation  // High quality scaling
+            );
+
+        qDebug() << "Resistor image loaded with transparency";
     } else {
         qDebug() << "Failed to load resistor image, using default";
         createDefaultImage();
@@ -70,13 +91,22 @@ void ResistorComponent::paintEvent(QPaintEvent *event)
 
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
+    painter.setRenderHint(QPainter::SmoothPixmapTransform);  // High quality
 
     // Draw resistor image
-    painter.drawPixmap(0, 0, width(), height() - 20, m_resistorImage);
+    if (!m_resistorImage.isNull()) {
+        painter.drawPixmap(0, 0, width(), height(), m_resistorImage);
+    }
 
-    // Draw resistance value
-    painter.setPen(Qt::black);
+    // Draw resistance value with better text rendering
+    painter.setRenderHint(QPainter::TextAntialiasing);
+
+    // Background for text
+    QRect textRect(0, height() - 22, width(), 22);
+    painter.fillRect(textRect, QColor(0, 0, 0, 150));
+
+    // Draw text
+    painter.setPen(Qt::white);
     painter.setFont(QFont("Arial", 10, QFont::Bold));
-    painter.drawText(0, height() - 15, width(), 15, Qt::AlignCenter,
-                     QString("%1Ω").arg(m_resistance));
+    painter.drawText(textRect, Qt::AlignCenter, QString("%1Ω").arg(m_resistance));
 }

@@ -14,12 +14,16 @@ void SimulatorPanel::loadBackgroundImage()
 
     if (!m_arduinoBoardImage.isNull()) {
         qDebug() << "Arduino board image loaded successfully";
-        // Scale to fit widget while maintaining aspect ratio
+        qDebug() << "Original image size:" << m_arduinoBoardImage.size();
+
+        // Scale to SMALLER size - adjust these numbers
         m_arduinoBoardImage = m_arduinoBoardImage.scaled(
-            550, 450,
+            450, 350,  // Try smaller: was 650, 500
             Qt::KeepAspectRatio,
             Qt::SmoothTransformation
             );
+
+        qDebug() << "Scaled image size:" << m_arduinoBoardImage.width() << "x" << m_arduinoBoardImage.height();
     } else {
         qDebug() << "Failed to load Arduino board image";
     }
@@ -31,21 +35,31 @@ void SimulatorPanel::paintEvent(QPaintEvent *event)
 
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
+    painter.setRenderHint(QPainter::SmoothPixmapTransform);
 
-    // Draw gradient background
+    // Draw dark professional background
     QLinearGradient gradient(0, 0, 0, height());
-    gradient.setColorAt(0, QColor(232, 244, 248));
-    gradient.setColorAt(1, QColor(208, 232, 240));
+    gradient.setColorAt(0, QColor(45, 52, 54));
+    gradient.setColorAt(1, QColor(28, 40, 51));
     painter.fillRect(rect(), gradient);
 
     // Draw border
-    painter.setPen(QPen(QColor(74, 144, 164), 2));
-    painter.drawRoundedRect(rect().adjusted(1, 1, -1, -1), 8, 8);
+    painter.setPen(QPen(QColor(99, 110, 114), 1));
+    painter.drawRoundedRect(rect().adjusted(1, 1, -1, -1), 5, 5);
 
-    // Draw Arduino board image centered
+    // Draw Arduino board LOWER on screen (more space at top)
     if (!m_arduinoBoardImage.isNull()) {
-        int x = (width() - m_arduinoBoardImage.width()) / 2;
-        int y = (height() - m_arduinoBoardImage.height()) / 2;
+        int x = (width() - m_arduinoBoardImage.width()) / 2;  // Center horizontally
+        int y = height() - m_arduinoBoardImage.height() - 30; // Position at bottom with 30px margin
+
+        // Alternative: Use percentage positioning
+        // int y = (int)(height() * 0.4);  // Start at 40% down from top
+
         painter.drawPixmap(x, y, m_arduinoBoardImage);
+    } else {
+        painter.setPen(QColor(200, 200, 200));
+        painter.setFont(QFont("Arial", 14));
+        painter.drawText(rect(), Qt::AlignCenter,
+                         "Arduino Board\n(Add arduino_board.png to resources/images/)");
     }
 }

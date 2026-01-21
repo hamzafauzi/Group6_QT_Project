@@ -2,12 +2,13 @@
 
 Component::Component(QWidget *parent)
     : QWidget(parent)
-    , m_position(0, 0)
     , m_pin(-1)
-    , m_componentId(-1)
     , m_isDragging(false)
 {
-    setMouseTracking(true);
+    // Ensure transparent background
+    setStyleSheet("background: transparent;");
+    setAttribute(Qt::WA_TranslucentBackground);
+    setAutoFillBackground(false);
 }
 
 Component::~Component()
