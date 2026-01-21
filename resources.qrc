@@ -1,11 +1,9 @@
-﻿<!DOCTYPE RCC>
-<RCC version="1.0">
-    <qresource>
+﻿<RCC>
+    <qresource prefix="/">
         <file>resources/images/led_off.png</file>
         <file>resources/images/led_on.png</file>
         <file>resources/images/button_up.png</file>
-        <file>resources/images/button_down.png</file>
         <file>resources/images/resistor.png</file>
-	<file>resources/images/arduino_board.png</file>
+        <file>resources/images/arduino_board.png</file>
     </qresource>
 </RCC>
