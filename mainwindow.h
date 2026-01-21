@@ -11,6 +11,7 @@
 #include <QSplitter>
 #include "ledcomponent.h"
 #include "buttoncomponent.h"
+#include "resistorcomponent.h"
 
 class MainWindow : public QMainWindow
 {
@@ -35,6 +36,7 @@ private:
     // Test components
     LEDComponent *testLED;
     ButtonComponent *testButton;
+    ResistorComponent *testResistor;
 
     // Helper methods
     void setupUI();

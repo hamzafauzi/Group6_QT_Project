@@ -20,6 +20,8 @@ set(PROJECT_SOURCES
     ledcomponent.h
     buttoncomponent.cpp
     buttoncomponent.h
+    resistorcomponent.cpp
+    resistorcomponent.h
     resources.qrc
 )
 
@@ -27,6 +29,8 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(ArduinoSimulator
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
+        resistorcomponent.h
+        resistorcomponent.cpp
     )
 else()
     if(ANDROID)

@@ -1,6 +1,7 @@
 #include "buttoncomponent.h"
 #include <QPainter>
 #include <QFile>
+#include <QDebug>
 
 ButtonComponent::ButtonComponent(QWidget *parent)
     : Component(parent)
@@ -16,13 +17,19 @@ ButtonComponent::~ButtonComponent()
 
 void ButtonComponent::loadImages()
 {
-    if (QFile::exists(":/resources/images/button_up.png")) {
-        m_buttonUpImage = QPixmap(":/resources/images/button_up.png");
-        m_buttonDownImage = QPixmap(":/resources/images/button_down.png");
+    // Try to load from Qt resources
+    m_buttonUpImage = QPixmap(":/resources/images/button_up.png");
+    m_buttonDownImage = QPixmap(":/resources/images/button_down.png");
 
+    // Check if images loaded successfully
+    if (!m_buttonUpImage.isNull() && !m_buttonDownImage.isNull()) {
+        // Scale images to fit component size
         m_buttonUpImage = m_buttonUpImage.scaled(50, 50, Qt::KeepAspectRatio, Qt::SmoothTransformation);
         m_buttonDownImage = m_buttonDownImage.scaled(50, 50, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+        qDebug() << "Button images loaded successfully from resources";
     } else {
+        // Fallback: create default images if loading failed
+        qDebug() << "Failed to load button images, using defaults";
         createDefaultImages();
     }
 }
@@ -32,24 +39,28 @@ void ButtonComponent::createDefaultImages()
     // Button UP state
     m_buttonUpImage = QPixmap(50, 50);
     m_buttonUpImage.fill(Qt::transparent);
-    QPainter painter(&m_buttonUpImage);
-    painter.setRenderHint(QPainter::Antialiasing);
-    painter.setBrush(QColor(220, 220, 220));
-    painter.setPen(QPen(Qt::black, 2));
-    painter.drawEllipse(5, 5, 40, 40);
-    painter.setBrush(QColor(180, 180, 180));
-    painter.drawEllipse(15, 15, 20, 20);
+    {
+        QPainter painter(&m_buttonUpImage);
+        painter.setRenderHint(QPainter::Antialiasing);
+        painter.setBrush(QColor(220, 220, 220));
+        painter.setPen(QPen(Qt::black, 2));
+        painter.drawEllipse(5, 5, 40, 40);
+        painter.setBrush(QColor(180, 180, 180));
+        painter.drawEllipse(15, 15, 20, 20);
+    }
 
     // Button DOWN state
     m_buttonDownImage = QPixmap(50, 50);
     m_buttonDownImage.fill(Qt::transparent);
-    QPainter painterDown(&m_buttonDownImage);
-    painterDown.setRenderHint(QPainter::Antialiasing);
-    painterDown.setBrush(QColor(160, 160, 160));
-    painterDown.setPen(QPen(Qt::black, 2));
-    painterDown.drawEllipse(5, 5, 40, 40);
-    painterDown.setBrush(QColor(120, 120, 120));
-    painterDown.drawEllipse(15, 18, 20, 20);
+    {
+        QPainter painterDown(&m_buttonDownImage);
+        painterDown.setRenderHint(QPainter::Antialiasing);
+        painterDown.setBrush(QColor(160, 160, 160));
+        painterDown.setPen(QPen(Qt::black, 2));
+        painterDown.drawEllipse(5, 5, 40, 40);
+        painterDown.setBrush(QColor(120, 120, 120));
+        painterDown.drawEllipse(15, 18, 20, 20);
+    }
 }
 
 void ButtonComponent::setPressed(bool pressed)

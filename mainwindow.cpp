@@ -255,6 +255,12 @@ void MainWindow::testComponents()
     testButton->setPin(2);
     testButton->show();
 
+    // Create test resistor
+    testResistor = new ResistorComponent(simulatorPanel);
+    testResistor->setPosition(QPoint(250, 50));
+    testResistor->setResistance(220);  // 220 ohms
+    testResistor->show();
+
     // Connect button to LED
     connect(testButton, &ButtonComponent::buttonPressed, [this]() {
         testLED->setState(true);
@@ -266,5 +272,5 @@ void MainWindow::testComponents()
         logMessage("Button released - LED OFF");
     });
 
-    logMessage("Test components created: LED (Pin 13) and Button (Pin 2)");
+    logMessage("Test components created: LED (Pin 13), Button (Pin 2), and Resistor (220Ω)");
 }

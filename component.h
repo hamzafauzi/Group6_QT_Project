@@ -14,7 +14,6 @@ public:
     explicit Component(QWidget *parent = nullptr);
     virtual ~Component();
 
-    // Getters and setters
     void setPosition(const QPoint &pos);
     QPoint position() const { return m_position; }
 

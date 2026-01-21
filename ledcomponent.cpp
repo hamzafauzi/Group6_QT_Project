@@ -1,6 +1,7 @@
 #include "ledcomponent.h"
 #include <QPainter>
 #include <QFile>
+#include <QDebug>
 
 LEDComponent::LEDComponent(QWidget *parent)
     : Component(parent)
@@ -16,52 +17,58 @@ LEDComponent::~LEDComponent()
 
 void LEDComponent::loadImages()
 {
-    // Try to load from resources
-    if (QFile::exists(":/resources/images/led_on.png")) {
-        m_ledOnImage = QPixmap(":/resources/images/led_on.png");
-        m_ledOffImage = QPixmap(":/resources/images/led_off.png");
+    // Try to load from Qt resources
+    m_ledOnImage = QPixmap(":/resources/images/led_on.png");
+    m_ledOffImage = QPixmap(":/resources/images/led_off.png");
 
+    // Check if images loaded successfully
+    if (!m_ledOnImage.isNull() && !m_ledOffImage.isNull()) {
         // Scale images to fit component size
         m_ledOnImage = m_ledOnImage.scaled(50, 50, Qt::KeepAspectRatio, Qt::SmoothTransformation);
         m_ledOffImage = m_ledOffImage.scaled(50, 50, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+        qDebug() << "LED images loaded successfully from resources";
     } else {
-        // Create default images if resources not available
+        // Fallback: create default images if loading failed
+        qDebug() << "Failed to load LED images, using defaults";
         createDefaultImages();
     }
 }
 
 void LEDComponent::createDefaultImages()
 {
-    // Create simple LED OFF image programmatically
+    // Create simple LED OFF image
     m_ledOffImage = QPixmap(50, 50);
     m_ledOffImage.fill(Qt::transparent);
-    QPainter painter(&m_ledOffImage);
-    painter.setRenderHint(QPainter::Antialiasing);
-    painter.setBrush(QColor(100, 100, 100));
-    painter.setPen(QPen(Qt::black, 2));
-    painter.drawEllipse(5, 5, 40, 40);
+    {
+        QPainter painter(&m_ledOffImage);
+        painter.setRenderHint(QPainter::Antialiasing);
+        painter.setBrush(QColor(100, 100, 100));
+        painter.setPen(QPen(Qt::black, 2));
+        painter.drawEllipse(5, 5, 40, 40);
+    }
 
-    // Create simple LED ON image programmatically
+    // Create simple LED ON image with glow
     m_ledOnImage = QPixmap(50, 50);
     m_ledOnImage.fill(Qt::transparent);
-    QPainter painterOn(&m_ledOnImage);
-    painterOn.setRenderHint(QPainter::Antialiasing);
+    {
+        QPainter painterOn(&m_ledOnImage);
+        painterOn.setRenderHint(QPainter::Antialiasing);
 
-    // Glowing effect for ON state
-    QRadialGradient gradient(25, 25, 25);
-    gradient.setColorAt(0, QColor(255, 255, 100));
-    gradient.setColorAt(0.5, QColor(255, 200, 0));
-    gradient.setColorAt(1, QColor(200, 150, 0));
+        QRadialGradient gradient(25, 25, 20);
+        gradient.setColorAt(0, QColor(255, 255, 100));
+        gradient.setColorAt(0.5, QColor(255, 200, 0));
+        gradient.setColorAt(1, QColor(200, 150, 0));
 
-    painterOn.setBrush(gradient);
-    painterOn.setPen(QPen(QColor(255, 200, 0), 2));
-    painterOn.drawEllipse(5, 5, 40, 40);
+        painterOn.setBrush(gradient);
+        painterOn.setPen(QPen(QColor(255, 200, 0), 2));
+        painterOn.drawEllipse(5, 5, 40, 40);
+    }
 }
 
 void LEDComponent::setState(bool on)
 {
     m_isOn = on;
-    update(); // Trigger repaint
+    update();
 }
 
 void LEDComponent::paintEvent(QPaintEvent *event)
