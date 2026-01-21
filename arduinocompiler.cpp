@@ -18,15 +18,13 @@ ArduinoCompiler::~ArduinoCompiler()
 
 QString ArduinoCompiler::findArduinoCLI()
 {
-    // Windows-specific paths
     QStringList possiblePaths;
+    possiblePaths << "C:/arduino-cli/arduino-cli.exe";  // Preferred (no spaces)
     possiblePaths << "C:/Program Files/Arduino CLI/arduino-cli.exe";
-    possiblePaths << "C:/arduino-cli/arduino-cli.exe";
     possiblePaths << QDir::homePath() + "/scoop/shims/arduino-cli.exe";
     possiblePaths << QDir::homePath() + "/AppData/Local/Programs/Arduino CLI/arduino-cli.exe";
-    possiblePaths << "arduino-cli.exe";  // Try PATH
+    possiblePaths << "arduino-cli.exe";
 
-    // Check each path
     for (const QString &path : possiblePaths) {
         QFile file(path);
         if (file.exists()) {
@@ -34,7 +32,6 @@ QString ArduinoCompiler::findArduinoCLI()
             return path;
         }
 
-        // Try executing (in case it's in PATH)
         QProcess testProcess;
         testProcess.start(path, QStringList() << "version");
         testProcess.waitForFinished(2000);
@@ -57,7 +54,6 @@ bool ArduinoCompiler::isArduinoCLIInstalled()
 
 bool ArduinoCompiler::createTempSketch(const QString &code)
 {
-    // Create temp directory in Windows temp folder
     m_tempDir = QStandardPaths::writableLocation(QStandardPaths::TempLocation) + "/arduino_simulator";
     QDir dir;
 
@@ -65,7 +61,6 @@ bool ArduinoCompiler::createTempSketch(const QString &code)
         dir.mkpath(m_tempDir);
     }
 
-    // Create sketch directory
     QString sketchName = "temp_sketch";
     QString sketchDir = m_tempDir + "/" + sketchName;
 
@@ -73,7 +68,6 @@ bool ArduinoCompiler::createTempSketch(const QString &code)
         dir.mkpath(sketchDir);
     }
 
-    // Create .ino file
     m_sketchPath = sketchDir + "/" + sketchName + ".ino";
     QFile file(m_sketchPath);
 
@@ -92,34 +86,29 @@ bool ArduinoCompiler::createTempSketch(const QString &code)
 
 void ArduinoCompiler::compile(const QString &code)
 {
-    // Find Arduino CLI
     QString arduinoCliPath = findArduinoCLI();
 
     if (arduinoCliPath.isEmpty()) {
         emit compilationError("ERROR: Arduino CLI not found!");
-        emit compilationError("Install with: choco install arduino-cli");
-        emit compilationError("Or download from: https://arduino.github.io/arduino-cli/");
+        emit compilationError("Install from: https://arduino.github.io/arduino-cli/");
         emit compilationFinished(false);
         return;
     }
 
-    // Create temporary sketch
     if (!createTempSketch(code)) {
         emit compilationError("Failed to create temporary sketch file");
         emit compilationFinished(false);
         return;
     }
 
-    // Clean up previous process
     if (m_process) {
         m_process->kill();
         m_process->deleteLater();
     }
 
-    // Create new process
     m_process = new QProcess(this);
+    m_process->setWorkingDirectory(QDir::tempPath());
 
-    // Connect signals
     connect(m_process, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
             this, &ArduinoCompiler::onProcessFinished);
     connect(m_process, &QProcess::errorOccurred,
@@ -129,19 +118,24 @@ void ArduinoCompiler::compile(const QString &code)
     connect(m_process, &QProcess::readyReadStandardError,
             this, &ArduinoCompiler::onReadyReadStandardError);
 
-    // Compile command
     QStringList arguments;
     arguments << "compile"
               << "--fqbn" << "arduino:avr:uno"
-              << m_sketchPath;
+              << QDir::toNativeSeparators(m_sketchPath);
 
     emit compilationStarted();
     emit compilationOutput("Starting Arduino compilation...");
-    emit compilationOutput("Using: " + arduinoCliPath);
-    emit compilationOutput("Command: " + arduinoCliPath + " " + arguments.join(" "));
 
-    // Start compilation
-    m_process->start(arduinoCliPath, arguments);
+    QString nativeCliPath = QDir::toNativeSeparators(arduinoCliPath);
+    emit compilationOutput("Using: " + nativeCliPath);
+    emit compilationOutput("Sketch: " + QDir::toNativeSeparators(m_sketchPath));
+
+    m_process->start(nativeCliPath, arguments);
+
+    if (!m_process->waitForStarted(3000)) {
+        emit compilationError("ERROR: Failed to start arduino-cli");
+        emit compilationFinished(false);
+    }
 }
 
 void ArduinoCompiler::onProcessFinished(int exitCode, QProcess::ExitStatus exitStatus)
@@ -164,16 +158,16 @@ void ArduinoCompiler::onProcessError(QProcess::ProcessError error)
     switch (error) {
     case QProcess::FailedToStart:
         errorMsg = "ERROR: arduino-cli failed to start.\n"
-                   "Make sure Arduino CLI is installed and in PATH.";
+                   "Try moving arduino-cli.exe to C:\\arduino-cli\\";
         break;
     case QProcess::Crashed:
-        errorMsg = "ERROR: arduino-cli crashed during compilation.";
+        errorMsg = "ERROR: arduino-cli crashed.";
         break;
     case QProcess::Timedout:
         errorMsg = "ERROR: Compilation timed out.";
         break;
     default:
-        errorMsg = "ERROR: Unknown compilation error occurred.";
+        errorMsg = "ERROR: Unknown error.";
         break;
     }
 

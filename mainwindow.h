@@ -13,6 +13,8 @@
 #include "buttoncomponent.h"
 #include "resistorcomponent.h"
 #include "simulatorpanel.h"
+#include "arduinocompiler.h"
+#include "simulationengine.h"
 
 class MainWindow : public QMainWindow
 {
@@ -26,6 +28,16 @@ private slots:
     void onBuildClicked();
     void onRunClicked();
 
+    // Compiler slots - NEW
+    void onCompilationStarted();
+    void onCompilationOutput(const QString &output);
+    void onCompilationError(const QString &error);
+    void onCompilationFinished(bool success);
+
+    // Simulation slots - NEW
+    void onPinStateChanged(int pin, PinState state);
+    void onSimulationLog(const QString &message);
+
 private:
     // UI Components
     QPushButton *buildButton;
@@ -38,6 +50,13 @@ private:
     LEDComponent *testLED;
     ButtonComponent *testButton;
     ResistorComponent *testResistor;
+
+    // Arduino components - NEW
+    ArduinoCompiler *compiler;
+    SimulationEngine *simulationEngine;
+
+    // Component mapping (pin -> component)
+    QMap<int, LEDComponent*> ledComponents;
 
     // Helper methods
     void setupUI();

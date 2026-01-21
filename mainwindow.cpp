@@ -1,56 +1,82 @@
 #include "mainwindow.h"
 #include <QFont>
+#include <QDebug>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , isCompilationSuccessful(false)
+    , compiler(nullptr)
+    , simulationEngine(nullptr)
 {
+    // Create compiler and simulation engine
+    compiler = new ArduinoCompiler(this);
+    simulationEngine = new SimulationEngine(this);
+
+    // Connect compiler signals
+    connect(compiler, &ArduinoCompiler::compilationStarted,
+            this, &MainWindow::onCompilationStarted);
+    connect(compiler, &ArduinoCompiler::compilationOutput,
+            this, &MainWindow::onCompilationOutput);
+    connect(compiler, &ArduinoCompiler::compilationError,
+            this, &MainWindow::onCompilationError);
+    connect(compiler, &ArduinoCompiler::compilationFinished,
+            this, &MainWindow::onCompilationFinished);
+
+    // Connect simulation signals
+    connect(simulationEngine, &SimulationEngine::pinStateChanged,
+            this, &MainWindow::onPinStateChanged);
+    connect(simulationEngine, &SimulationEngine::simulationLog,
+            this, &MainWindow::onSimulationLog);
+
     setupUI();
 }
 
 MainWindow::~MainWindow()
 {
-    // Qt handles cleanup automatically for child widgets
+    if (simulationEngine) {
+        simulationEngine->stop();
+    }
 }
 
 void MainWindow::setupUI()
 {
-    // Set window properties
     setWindowTitle("Arduino Simulator - Qt6");
     resize(1200, 800);
 
-    // Create central widget
     QWidget *centralWidget = new QWidget(this);
     setCentralWidget(centralWidget);
 
-    // Create main vertical layout
     QVBoxLayout *mainLayout = new QVBoxLayout(centralWidget);
     mainLayout->setSpacing(5);
     mainLayout->setContentsMargins(10, 10, 10, 10);
 
-    // Add all sections
     createControlPanel(mainLayout);
     createMiddleSection(mainLayout);
     createDebugPanel(mainLayout);
 
-    // Initialize
     logMessage("Arduino Simulator initialized. Ready to build.");
+
+    // Check if Arduino CLI is installed
+    if (compiler->isArduinoCLIInstalled()) {
+        logMessage("✓ Arduino CLI detected and ready");
+    } else {
+        logMessage("✗ WARNING: Arduino CLI not found. Compilation will fail.");
+        logMessage("  Install it from: https://arduino.github.io/arduino-cli/");
+        logMessage("  Or run: choco install arduino-cli");
+    }
 
     testComponents();
 }
 
 void MainWindow::createControlPanel(QVBoxLayout *mainLayout)
 {
-    // Create control panel widget
     QWidget *controlPanel = new QWidget();
     controlPanel->setMaximumHeight(60);
     controlPanel->setStyleSheet("background-color: #e0e0e0; border-radius: 5px;");
 
-    // Create horizontal layout for buttons
     QHBoxLayout *controlLayout = new QHBoxLayout(controlPanel);
     controlLayout->setContentsMargins(10, 10, 10, 10);
 
-    // Create Build button
     buildButton = new QPushButton("Build");
     buildButton->setMinimumHeight(40);
     buildButton->setStyleSheet(
@@ -71,7 +97,6 @@ void MainWindow::createControlPanel(QVBoxLayout *mainLayout)
         );
     connect(buildButton, &QPushButton::clicked, this, &MainWindow::onBuildClicked);
 
-    // Create Run button
     runButton = new QPushButton("Run");
     runButton->setMinimumHeight(40);
     runButton->setEnabled(false);
@@ -97,24 +122,21 @@ void MainWindow::createControlPanel(QVBoxLayout *mainLayout)
         );
     connect(runButton, &QPushButton::clicked, this, &MainWindow::onRunClicked);
 
-    // Add buttons to layout
     controlLayout->addWidget(buildButton);
     controlLayout->addWidget(runButton);
     controlLayout->addStretch();
 
-    // Add control panel to main layout
     mainLayout->addWidget(controlPanel);
 }
 
 void MainWindow::createMiddleSection(QVBoxLayout *mainLayout)
 {
-    // Create horizontal splitter for code editor and simulator
     QSplitter *splitter = new QSplitter(Qt::Horizontal);
 
-    // Create code editor
+    // Code editor
     codeEditor = new QTextEdit();
-    QFont monoFont("Menlo");
-    monoFont.setPointSize(13);
+    QFont monoFont("Consolas");  // Windows monospace font
+    monoFont.setPointSize(11);
     codeEditor->setFont(monoFont);
     codeEditor->setStyleSheet(
         "QTextEdit {"
@@ -126,7 +148,7 @@ void MainWindow::createMiddleSection(QVBoxLayout *mainLayout)
         "}"
         );
 
-    // Add sample Arduino code
+    // Sample Arduino code
     codeEditor->setPlainText(
         "void setup() {\n"
         "  pinMode(13, OUTPUT);\n"
@@ -139,45 +161,43 @@ void MainWindow::createMiddleSection(QVBoxLayout *mainLayout)
         "}"
         );
 
-    // Create simulator panel with Arduino board background
-    simulatorPanel = new SimulatorPanel();  // ← Use SimulatorPanel instead of QWidget
+    // Simulator panel
+    simulatorPanel = new SimulatorPanel();
 
-    // Add to splitter
     splitter->addWidget(codeEditor);
     splitter->addWidget(simulatorPanel);
     splitter->setStretchFactor(0, 1);
     splitter->setStretchFactor(1, 1);
     splitter->setSizes(QList<int>({500, 500}));
 
-    // Add splitter to main layout
     mainLayout->addWidget(splitter, 1);
 }
+
 void MainWindow::createDebugPanel(QVBoxLayout *mainLayout)
 {
-    // Create debug output panel
     debugOutput = new QTextBrowser();
     debugOutput->setMaximumHeight(200);
     debugOutput->setStyleSheet(
         "QTextBrowser {"
         "   background-color: #2b2b2b;"
         "   color: #00ff00;"
-        "   font-family: 'Menlo';"
-        "   font-size: 11px;"
+        "   font-family: 'Consolas';"
+        "   font-size: 10px;"
         "   border: 1px solid #555555;"
         "   border-radius: 5px;"
         "   padding: 5px;"
         "}"
         );
 
-    // Add to main layout
     mainLayout->addWidget(debugOutput);
 }
 
 void MainWindow::onBuildClicked()
 {
-    logMessage("=== Build Started ===");
+    logMessage("\n" + QString("=").repeated(60));
+    logMessage("BUILD STARTED");
+    logMessage(QString("=").repeated(60));
 
-    // Get the code from editor
     QString code = codeEditor->toPlainText();
 
     if (code.trimmed().isEmpty()) {
@@ -187,38 +207,76 @@ void MainWindow::onBuildClicked()
         return;
     }
 
-    logMessage("Analyzing code...");
-    logMessage("Code length: " + QString::number(code.length()) + " characters");
-
-    // TODO: In next step, we'll integrate Arduino compiler here
-    logMessage("Note: Arduino compiler integration pending.");
-    logMessage("=== Build Completed (Simulated) ===");
-
-    // For now, simulate successful compilation
-    isCompilationSuccessful = true;
-    runButton->setEnabled(true);
-    logMessage("Build successful! You can now run the simulation.");
+    // Start compilation using Arduino CLI
+    compiler->compile(code);
 }
 
 void MainWindow::onRunClicked()
 {
     if (!isCompilationSuccessful) {
-        logMessage("ERROR: Cannot run. Please build the code first.");
+        logMessage("ERROR: Cannot run. Build the code first.");
         return;
     }
 
-    logMessage("=== Simulation Started ===");
-    logMessage("Running Arduino simulation...");
+    logMessage("\n" + QString("=").repeated(60));
+    logMessage("SIMULATION STARTED");
+    logMessage(QString("=").repeated(60));
 
-    // TODO: In next step, we'll implement simulation logic
-    logMessage("Simulation functionality will be implemented in next steps.");
+    QString code = codeEditor->toPlainText();
+    simulationEngine->start(code);
+}
+
+void MainWindow::onCompilationStarted()
+{
+    logMessage("Compiling with Arduino CLI...");
+    buildButton->setEnabled(false);
+}
+
+void MainWindow::onCompilationOutput(const QString &output)
+{
+    logMessage(output);
+}
+
+void MainWindow::onCompilationError(const QString &error)
+{
+    debugOutput->setTextColor(QColor(255, 100, 100));
+    logMessage(error);
+    debugOutput->setTextColor(QColor(0, 255, 0));
+}
+
+void MainWindow::onCompilationFinished(bool success)
+{
+    buildButton->setEnabled(true);
+    isCompilationSuccessful = success;
+    runButton->setEnabled(success);
+
+    if (success) {
+        logMessage(QString("=").repeated(60));
+        logMessage("✓ BUILD SUCCESSFUL - Ready to run simulation");
+        logMessage(QString("=").repeated(60));
+    } else {
+        logMessage(QString("=").repeated(60));
+        logMessage("✗ BUILD FAILED - Fix errors and try again");
+        logMessage(QString("=").repeated(60));
+    }
+}
+
+void MainWindow::onPinStateChanged(int pin, PinState state)
+{
+    // Update LED component if it exists for this pin
+    if (ledComponents.contains(pin)) {
+        ledComponents[pin]->setState(state == PIN_HIGH);
+    }
+}
+
+void MainWindow::onSimulationLog(const QString &message)
+{
+    logMessage(message);
 }
 
 void MainWindow::logMessage(const QString &message)
 {
     debugOutput->append(message);
-
-    // Auto-scroll to bottom
     QTextCursor cursor = debugOutput->textCursor();
     cursor.movePosition(QTextCursor::End);
     debugOutput->setTextCursor(cursor);
@@ -226,34 +284,37 @@ void MainWindow::logMessage(const QString &message)
 
 void MainWindow::testComponents()
 {
-    // Create test LED with better positioning
+    // Create LED on pin 13
     testLED = new LEDComponent(simulatorPanel);
     testLED->setPosition(QPoint(80, 100));
     testLED->setPin(13);
     testLED->show();
 
-    // Create test button
+    // Map pin 13 to LED component
+    ledComponents[13] = testLED;
+
+    // Create button on pin 2
     testButton = new ButtonComponent(simulatorPanel);
     testButton->setPosition(QPoint(200, 100));
     testButton->setPin(2);
     testButton->show();
 
-    // Create test resistor
+    // Create resistor
     testResistor = new ResistorComponent(simulatorPanel);
     testResistor->setPosition(QPoint(320, 100));
     testResistor->setResistance(220);
     testResistor->show();
 
-    // Connect button to LED
+    // Manual button control (for testing)
     connect(testButton, &ButtonComponent::buttonPressed, [this]() {
         testLED->setState(true);
-        logMessage("Button pressed - LED ON");
+        logMessage("Manual: Button pressed - LED ON");
     });
 
     connect(testButton, &ButtonComponent::buttonReleased, [this]() {
         testLED->setState(false);
-        logMessage("Button released - LED OFF");
+        logMessage("Manual: Button released - LED OFF");
     });
 
-    logMessage("Test components created: LED (Pin 13), Button (Pin 2), and Resistor (220Ω)");
+    logMessage("Components created: LED (Pin 13), Button (Pin 2), Resistor (220Ω)");
 }

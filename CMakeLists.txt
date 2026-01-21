@@ -24,9 +24,14 @@ set(PROJECT_SOURCES
     resistorcomponent.h
     simulatorpanel.cpp
     simulatorpanel.h
+    arduinoparser.cpp
+    arduinoparser.h
+    arduinocompiler.cpp
+    arduinocompiler.h
+    simulationengine.cpp
+    simulationengine.h
     resources.qrc
 )
-
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(ArduinoSimulator
         MANUAL_FINALIZATION
