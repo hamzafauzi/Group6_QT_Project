@@ -139,17 +139,8 @@ void MainWindow::createMiddleSection(QVBoxLayout *mainLayout)
         "}"
         );
 
-    // Create simulator panel
-    simulatorPanel = new QWidget();
-    simulatorPanel->setStyleSheet(
-        "QWidget {"
-        "   background: qlineargradient(x1:0, y1:0, x2:0, y2:1,"
-        "                stop:0 #e8f4f8, stop:1 #d0e8f0);"
-        "   border: 2px solid #4a90a4;"
-        "   border-radius: 8px;"
-        "}"
-        );
-    simulatorPanel->setMinimumWidth(500);
+    // Create simulator panel with Arduino board background
+    simulatorPanel = new SimulatorPanel();  // ← Use SimulatorPanel instead of QWidget
 
     // Add to splitter
     splitter->addWidget(codeEditor);
@@ -161,7 +152,6 @@ void MainWindow::createMiddleSection(QVBoxLayout *mainLayout)
     // Add splitter to main layout
     mainLayout->addWidget(splitter, 1);
 }
-
 void MainWindow::createDebugPanel(QVBoxLayout *mainLayout)
 {
     // Create debug output panel

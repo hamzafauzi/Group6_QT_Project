@@ -6,5 +6,6 @@
         <file>resources/images/button_up.png</file>
         <file>resources/images/button_down.png</file>
         <file>resources/images/resistor.png</file>
+	<file>resources/images/arduino_board.png</file>
     </qresource>
 </RCC>

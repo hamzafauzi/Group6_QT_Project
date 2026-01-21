@@ -22,6 +22,8 @@ set(PROJECT_SOURCES
     buttoncomponent.h
     resistorcomponent.cpp
     resistorcomponent.h
+    simulatorpanel.cpp
+    simulatorpanel.h
     resources.qrc
 )
 
@@ -31,6 +33,8 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         ${PROJECT_SOURCES}
         resistorcomponent.h
         resistorcomponent.cpp
+        simulatorpanel.cpp
+        simulatorpanel.h
     )
 else()
     if(ANDROID)

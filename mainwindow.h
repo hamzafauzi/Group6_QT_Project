@@ -12,6 +12,7 @@
 #include "ledcomponent.h"
 #include "buttoncomponent.h"
 #include "resistorcomponent.h"
+#include "simulatorpanel.h"
 
 class MainWindow : public QMainWindow
 {
@@ -30,7 +31,7 @@ private:
     QPushButton *buildButton;
     QPushButton *runButton;
     QTextEdit *codeEditor;
-    QWidget *simulatorPanel;
+    SimulatorPanel *simulatorPanel;
     QTextBrowser *debugOutput;
 
     // Test components
