@@ -30,6 +30,10 @@ set(PROJECT_SOURCES
     arduinocompiler.h
     simulationengine.cpp
     simulationengine.h
+    pinselectordialog.cpp
+    pinselectordialog.h
+    wire.cpp
+    wire.h
     resources.qrc
 )
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
@@ -46,6 +50,10 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         arduinocompiler.cpp
         arduinoparser.cpp
         simulationengine.cpp
+        pinselectordialog.h
+        wire.h
+        pinselectordialog.cpp
+        wire.cpp
     )
 else()
     if(ANDROID)
