@@ -85,6 +85,20 @@ void ResistorComponent::setResistance(int ohms)
     update();
 }
 
+void ResistorComponent::mousePressEvent(QMouseEvent *event)
+{
+    // Handle right-click
+    if (event->button() == Qt::RightButton) {
+        qDebug() << "Resistor: Right-click detected";
+        emit componentRightClicked(this);
+        event->accept();
+        return;
+    }
+
+    // Handle other mouse events
+    Component::mousePressEvent(event);
+}
+
 void ResistorComponent::paintEvent(QPaintEvent *event)
 {
     Q_UNUSED(event);

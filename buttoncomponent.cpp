@@ -108,9 +108,19 @@ void ButtonComponent::setPressed(bool pressed)
 
 void ButtonComponent::mousePressEvent(QMouseEvent *event)
 {
+    // Handle right-click first
+    if (event->button() == Qt::RightButton) {
+        qDebug() << "Button: Right-click detected";
+        emit componentRightClicked(this);
+        event->accept();
+        return;
+    }
+
+    // Handle left-click for button press
     if (event->button() == Qt::LeftButton) {
         setPressed(true);
     }
+
     Component::mousePressEvent(event);
 }
 

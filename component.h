@@ -18,16 +18,20 @@ public:
     QPoint position() const { return m_position; }
 
     void setPin(int pin) { m_pin = pin; }
-    int pin() const { return m_pin; }
+    int getPin() const { return m_pin; }  // Changed from pin() to getPin()
 
     void setComponentId(int id) { m_componentId = id; }
     int componentId() const { return m_componentId; }
 
     virtual QString componentType() const = 0;
 
+    // Virtual method for rotation (can be overridden)
+    virtual void rotate(int degrees) { Q_UNUSED(degrees); }
+
 signals:
     void componentClicked(Component *component);
     void componentMoved(Component *component);
+    void componentRightClicked(Component *component);
 
 protected:
     void mousePressEvent(QMouseEvent *event) override;

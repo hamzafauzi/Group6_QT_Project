@@ -9,6 +9,7 @@ MainWindow::MainWindow(QWidget *parent)
     , isCompilationSuccessful(false)
     , compiler(nullptr)
     , simulationEngine(nullptr)
+    , nextComponentId(0)
 {
     // Create compiler and simulation engine
     compiler = new ArduinoCompiler(this);
@@ -72,59 +73,166 @@ void MainWindow::setupUI()
 void MainWindow::createControlPanel(QVBoxLayout *mainLayout)
 {
     QWidget *controlPanel = new QWidget();
-    controlPanel->setMaximumHeight(60);
-    controlPanel->setStyleSheet("background-color: #e0e0e0; border-radius: 5px;");
+    controlPanel->setMaximumHeight(70);
+    controlPanel->setStyleSheet(
+        "QWidget {"
+        "   background: qlineargradient(x1:0, y1:0, x2:0, y2:1,"
+        "                               stop:0 #f5f5f5, stop:1 #e8e8e8);"
+        "   border: 1px solid #c0c0c0;"
+        "   border-radius: 8px;"
+        "}"
+        );
 
     QHBoxLayout *controlLayout = new QHBoxLayout(controlPanel);
-    controlLayout->setContentsMargins(10, 10, 10, 10);
+    controlLayout->setContentsMargins(15, 12, 15, 12);
+    controlLayout->setSpacing(12);
 
-    buildButton = new QPushButton("Build");
-    buildButton->setMinimumHeight(40);
+    // Build Button
+    buildButton = new QPushButton("🔨 Build");
+    buildButton->setMinimumSize(110, 45);
+    buildButton->setCursor(Qt::PointingHandCursor);
     buildButton->setStyleSheet(
         "QPushButton {"
-        "   background-color: #4CAF50;"
+        "   background: qlineargradient(x1:0, y1:0, x2:0, y2:1,"
+        "                               stop:0 #66BB6A, stop:1 #4CAF50);"
         "   color: white;"
-        "   font-size: 14px;"
+        "   font-size: 13px;"
         "   font-weight: bold;"
-        "   border-radius: 5px;"
-        "   padding: 5px 15px;"
+        "   border: none;"
+        "   border-radius: 6px;"
+        "   padding: 8px 20px;"
+        "   box-shadow: 0 2px 4px rgba(0,0,0,0.2);"
         "}"
         "QPushButton:hover {"
-        "   background-color: #45a049;"
+        "   background: qlineargradient(x1:0, y1:0, x2:0, y2:1,"
+        "                               stop:0 #5CB860, stop:1 #43A047);"
         "}"
         "QPushButton:pressed {"
-        "   background-color: #3d8b40;"
+        "   background: qlineargradient(x1:0, y1:0, x2:0, y2:1,"
+        "                               stop:0 #4CAF50, stop:1 #388E3C);"
+        "   padding-top: 10px;"
+        "   padding-bottom: 6px;"
         "}"
         );
     connect(buildButton, &QPushButton::clicked, this, &MainWindow::onBuildClicked);
 
-    runButton = new QPushButton("Run");
-    runButton->setMinimumHeight(40);
+    // Run Button
+    runButton = new QPushButton("▶️ Run");
+    runButton->setMinimumSize(110, 45);
     runButton->setEnabled(false);
+    runButton->setCursor(Qt::PointingHandCursor);
     runButton->setStyleSheet(
         "QPushButton {"
-        "   background-color: #2196F3;"
+        "   background: qlineargradient(x1:0, y1:0, x2:0, y2:1,"
+        "                               stop:0 #42A5F5, stop:1 #2196F3);"
         "   color: white;"
-        "   font-size: 14px;"
+        "   font-size: 13px;"
         "   font-weight: bold;"
-        "   border-radius: 5px;"
-        "   padding: 5px 15px;"
+        "   border: none;"
+        "   border-radius: 6px;"
+        "   padding: 8px 20px;"
+        "   box-shadow: 0 2px 4px rgba(0,0,0,0.2);"
         "}"
         "QPushButton:hover:enabled {"
-        "   background-color: #0b7dda;"
+        "   background: qlineargradient(x1:0, y1:0, x2:0, y2:1,"
+        "                               stop:0 #1E88E5, stop:1 #1976D2);"
         "}"
         "QPushButton:pressed:enabled {"
-        "   background-color: #0968b8;"
+        "   background: qlineargradient(x1:0, y1:0, x2:0, y2:1,"
+        "                               stop:0 #1976D2, stop:1 #1565C0);"
+        "   padding-top: 10px;"
+        "   padding-bottom: 6px;"
         "}"
         "QPushButton:disabled {"
-        "   background-color: #cccccc;"
-        "   color: #666666;"
+        "   background: #d0d0d0;"
+        "   color: #888888;"
+        "   box-shadow: none;"
         "}"
         );
     connect(runButton, &QPushButton::clicked, this, &MainWindow::onRunClicked);
 
+    // Separator line
+    QFrame *separator = new QFrame();
+    separator->setFrameShape(QFrame::VLine);
+    separator->setFrameShadow(QFrame::Sunken);
+    separator->setStyleSheet("QFrame { color: #b0b0b0; }");
+
+    // Add Component Button with dropdown menu
+    addComponentButton = new QPushButton("➕ Add Component");
+    addComponentButton->setMinimumSize(150, 45);
+    addComponentButton->setCursor(Qt::PointingHandCursor);
+    addComponentButton->setStyleSheet(
+        "QPushButton {"
+        "   background: qlineargradient(x1:0, y1:0, x2:0, y2:1,"
+        "                               stop:0 #FFA726, stop:1 #FF9800);"
+        "   color: white;"
+        "   font-size: 13px;"
+        "   font-weight: bold;"
+        "   border: none;"
+        "   border-radius: 6px;"
+        "   padding: 8px 20px;"
+        "   box-shadow: 0 2px 4px rgba(0,0,0,0.2);"
+        "}"
+        "QPushButton:hover {"
+        "   background: qlineargradient(x1:0, y1:0, x2:0, y2:1,"
+        "                               stop:0 #FB8C00, stop:1 #F57C00);"
+        "}"
+        "QPushButton:pressed {"
+        "   background: qlineargradient(x1:0, y1:0, x2:0, y2:1,"
+        "                               stop:0 #F57C00, stop:1 #EF6C00);"
+        "   padding-top: 10px;"
+        "   padding-bottom: 6px;"
+        "}"
+        "QPushButton::menu-indicator {"
+        "   image: none;"
+        "   width: 0px;"
+        "}"
+        );
+
+    // Create styled dropdown menu for component selection
+    QMenu *componentMenu = new QMenu(this);
+    componentMenu->setStyleSheet(
+        "QMenu {"
+        "   background-color: white;"
+        "   border: 2px solid #FF9800;"
+        "   border-radius: 6px;"
+        "   padding: 5px;"
+        "}"
+        "QMenu::item {"
+        "   padding: 8px 30px 8px 20px;"
+        "   font-size: 12px;"
+        "   color: #333;"
+        "   border-radius: 4px;"
+        "   margin: 2px;"
+        "}"
+        "QMenu::item:selected {"
+        "   background-color: #FFE0B2;"
+        "   color: #E65100;"
+        "}"
+        "QMenu::separator {"
+        "   height: 1px;"
+        "   background: #e0e0e0;"
+        "   margin: 5px 10px;"
+        "}"
+        );
+
+    // Add menu actions with icons/emojis
+    QAction *ledAction = componentMenu->addAction("💡 LED Component");
+    QAction *buttonAction = componentMenu->addAction("🔘 Button Component");
+    componentMenu->addSeparator();
+    QAction *resistorAction = componentMenu->addAction("⚡ Resistor Component");
+
+    connect(ledAction, &QAction::triggered, this, &MainWindow::onAddLED);
+    connect(buttonAction, &QAction::triggered, this, &MainWindow::onAddButton);
+    connect(resistorAction, &QAction::triggered, this, &MainWindow::onAddResistor);
+
+    addComponentButton->setMenu(componentMenu);
+
+    // Add widgets to layout
     controlLayout->addWidget(buildButton);
     controlLayout->addWidget(runButton);
+    controlLayout->addWidget(separator);
+    controlLayout->addWidget(addComponentButton);
     controlLayout->addStretch();
 
     mainLayout->addWidget(controlPanel);
@@ -380,6 +488,7 @@ void MainWindow::testComponents()
 
     // Map pin 13 to LED component
     ledComponents[13] = testLED;
+    allComponents.append(testLED);
 
     // Connect LED leg clicks to handler
     connect(testLED, &LEDComponent::legClicked,
@@ -389,17 +498,35 @@ void MainWindow::testComponents()
     connect(testLED, &Component::componentMoved,
             this, &MainWindow::onComponentMoved);
 
+    // Connect right-click
+    connect(testLED, &Component::componentRightClicked,
+            this, &MainWindow::onComponentRightClicked);
+
     // Create button on pin 2
     testButton = new ButtonComponent(simulatorPanel);
     testButton->setPosition(QPoint(220, 40));
     testButton->setPin(2);
     testButton->show();
 
+    allComponents.append(testButton);
+
+    connect(testButton, &Component::componentMoved,
+            this, &MainWindow::onComponentMoved);
+    connect(testButton, &Component::componentRightClicked,
+            this, &MainWindow::onComponentRightClicked);
+
     // Create resistor
     testResistor = new ResistorComponent(simulatorPanel);
     testResistor->setPosition(QPoint(390, 40));
     testResistor->setResistance(220);
     testResistor->show();
+
+    allComponents.append(testResistor);
+
+    connect(testResistor, &Component::componentMoved,
+            this, &MainWindow::onComponentMoved);
+    connect(testResistor, &Component::componentRightClicked,
+            this, &MainWindow::onComponentRightClicked);
 
     // Manual button control (for testing)
     connect(testButton, &ButtonComponent::buttonPressed, [this]() {
@@ -511,5 +638,126 @@ void MainWindow::onComponentMoved(Component *component)
             conn.wire->setStartPoint(newLegPos);
             qDebug() << "Wire updated to new position:" << newLegPos;
         }
+    }
+}
+
+// ========== COMPONENT MANAGEMENT FUNCTIONS ==========
+
+void MainWindow::onComponentRightClicked(Component* component)
+{
+    if (!component) return;
+
+    logMessage(QString("Right-clicked on %1 (Pin %2)")
+                   .arg(component->componentType())
+                   .arg(component->getPin()));
+
+    // Show context menu at cursor position
+    QMenu contextMenu(this);
+
+    QAction *deleteAction = contextMenu.addAction("🗑️ Delete Component");
+
+    QAction *selectedAction = contextMenu.exec(QCursor::pos());
+
+    if (selectedAction == deleteAction) {
+        onDeleteComponent(component);
+    }
+}
+
+void MainWindow::onAddLED()
+{
+    LEDComponent *led = new LEDComponent(simulatorPanel);
+    led->setPosition(QPoint(50 + (nextComponentId * 60 % 400), 40 + (nextComponentId / 7) * 180));
+    led->setPin(13 + nextComponentId);
+    led->setComponentId(nextComponentId++);
+    led->show();
+
+    allComponents.append(led);
+    ledComponents[led->getPin()] = led;
+
+    connect(led, &LEDComponent::legClicked, this, &MainWindow::onLEDLegClicked);
+    connect(led, &Component::componentMoved, this, &MainWindow::onComponentMoved);
+    connect(led, &Component::componentRightClicked, this, &MainWindow::onComponentRightClicked);
+
+    logMessage(QString("✓ LED added on Pin %1 (ID: %2)")
+                   .arg(led->getPin())
+                   .arg(led->componentId()));
+}
+
+void MainWindow::onAddButton()
+{
+    ButtonComponent *button = new ButtonComponent(simulatorPanel);
+    button->setPosition(QPoint(50 + (nextComponentId * 60 % 400), 40 + (nextComponentId / 7) * 180));
+    button->setPin(2 + nextComponentId);
+    button->setComponentId(nextComponentId++);
+    button->show();
+
+    allComponents.append(button);
+
+    connect(button, &Component::componentMoved, this, &MainWindow::onComponentMoved);
+    connect(button, &Component::componentRightClicked, this, &MainWindow::onComponentRightClicked);
+
+    logMessage(QString("✓ Button added on Pin %1 (ID: %2)")
+                   .arg(button->getPin())
+                   .arg(button->componentId()));
+}
+
+void MainWindow::onAddResistor()
+{
+    ResistorComponent *resistor = new ResistorComponent(simulatorPanel);
+    resistor->setPosition(QPoint(50 + (nextComponentId * 60 % 400), 40 + (nextComponentId / 7) * 180));
+    resistor->setResistance(220);
+    resistor->setComponentId(nextComponentId++);
+    resistor->show();
+
+    allComponents.append(resistor);
+
+    connect(resistor, &Component::componentMoved, this, &MainWindow::onComponentMoved);
+    connect(resistor, &Component::componentRightClicked, this, &MainWindow::onComponentRightClicked);
+
+    logMessage(QString("✓ Resistor added (%1Ω, ID: %2)")
+                   .arg(resistor->resistance())
+                   .arg(resistor->componentId()));
+}
+
+void MainWindow::onDeleteComponent(Component *component)
+{
+    if (!component) return;
+
+    QString componentInfo = QString("%1 on Pin %2")
+                                .arg(component->componentType())
+                                .arg(component->getPin());
+
+    // Delete wires connected to this component
+    deleteWiresForComponent(component);
+
+    // Remove from ledComponents map if it's an LED
+    LEDComponent *led = qobject_cast<LEDComponent*>(component);
+    if (led) {
+        ledComponents.remove(component->getPin());
+    }
+
+    // Remove from allComponents list
+    allComponents.removeOne(component);
+
+    logMessage(QString("🗑️ Deleted: %1").arg(componentInfo));
+
+    // Delete the component
+    component->deleteLater();
+}
+
+void MainWindow::deleteWiresForComponent(Component *component)
+{
+    int deletedCount = 0;
+
+    for (int i = wireConnections.size() - 1; i >= 0; --i) {
+        if (wireConnections[i].led == component) {
+            wireConnections[i].wire->deleteLater();
+            wireConnections.removeAt(i);
+            deletedCount++;
+        }
+    }
+
+    if (deletedCount > 0) {
+        logMessage(QString("  ↳ Deleted %1 wire(s)").arg(deletedCount));
     }
 }

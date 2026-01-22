@@ -1,8 +1,10 @@
 #include "component.h"
+#include <QDebug>
 
 Component::Component(QWidget *parent)
     : QWidget(parent)
     , m_pin(-1)
+    , m_componentId(-1)
     , m_isDragging(false)
 {
     // Ensure transparent background
@@ -28,6 +30,13 @@ void Component::mousePressEvent(QMouseEvent *event)
         m_dragStartPosition = event->pos();
         emit componentClicked(this);
     }
+    else if (event->button() == Qt::RightButton) {
+        qDebug() << "Component: Right-click detected on" << componentType();
+        emit componentRightClicked(this);
+        event->accept();
+        return;
+    }
+
     QWidget::mousePressEvent(event);
 }
 

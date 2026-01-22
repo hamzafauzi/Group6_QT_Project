@@ -159,6 +159,15 @@ void LEDComponent::mousePressEvent(QMouseEvent *event)
     qDebug() << "Button:" << event->button();
     qDebug() << "Position:" << event->pos();
 
+    // Handle right-click first
+    if (event->button() == Qt::RightButton) {
+        qDebug() << "LED: Right-click detected, emitting componentRightClicked";
+        emit componentRightClicked(this);
+        event->accept();
+        return;
+    }
+
+    // Handle left-click on legs
     if (event->button() == Qt::LeftButton) {
         bool isPositive;
 

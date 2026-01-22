@@ -11,6 +11,7 @@
 #include <QSplitter>
 #include <QMap>
 #include <QList>
+#include <QMenu>              // NEW
 #include "ledcomponent.h"
 #include "buttoncomponent.h"
 #include "resistorcomponent.h"
@@ -18,6 +19,7 @@
 #include "arduinocompiler.h"
 #include "simulationengine.h"
 #include "wire.h"
+#include "pinselectordialog.h"  // NEW
 
 class MainWindow : public QMainWindow
 {
@@ -44,17 +46,25 @@ private slots:
     // Component interaction slots
     void onLEDLegClicked(LEDComponent *led, bool isPositiveLeg);
     void onComponentMoved(Component *component);
+    void onComponentRightClicked(Component *component);  // NEW
+
+    // Component management slots - NEW
+    void onAddLED();
+    void onAddButton();
+    void onAddResistor();
+    void onDeleteComponent(Component *component);
 
 private:
     // UI Components
     QPushButton *buildButton;
     QPushButton *runButton;
+    QPushButton *addComponentButton;  // NEW
     QTextEdit *codeEditor;
     SimulatorPanel *simulatorPanel;
     QTextBrowser *statusOutput;
     QTextBrowser *compilationOutput;
 
-    // Test components
+    // Test components (will be removed)
     LEDComponent *testLED;
     ButtonComponent *testButton;
     ResistorComponent *testResistor;
@@ -63,7 +73,8 @@ private:
     ArduinoCompiler *compiler;
     SimulationEngine *simulationEngine;
 
-    // Component mapping (pin -> component)
+    // Component management - NEW
+    QList<Component*> allComponents;  // Track all components
     QMap<int, LEDComponent*> ledComponents;
 
     // Wire connection tracking
@@ -83,6 +94,10 @@ private:
     void logMessage(const QString &message, bool isCompilation = false);
     void testComponents();
     void createWireConnection(LEDComponent *led, bool isPositiveLeg, int arduinoPin);
+    void deleteWiresForComponent(Component *component);  // NEW
+
+    // Component ID counter - NEW
+    int nextComponentId;
 
     // Compilation flag
     bool isCompilationSuccessful;
