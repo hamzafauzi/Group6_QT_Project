@@ -2,6 +2,8 @@
 #include <QPainter>
 #include <QFile>
 #include <QDebug>
+#include <QMouseEvent>
+#include <QRect>
 
 LEDComponent::LEDComponent(QWidget *parent)
     : Component(parent)
@@ -24,11 +26,10 @@ void LEDComponent::loadImages()
     m_ledOffImage = QPixmap(":/resources/images/led_off.png");
 
     if (!m_ledOnImage.isNull() && !m_ledOffImage.isNull()) {
-        // Optional: Extra white removal if PNGs still have issues
+        // Remove white background pixels
         QImage imgOff = m_ledOffImage.toImage().convertToFormat(QImage::Format_ARGB32);
         QImage imgOn = m_ledOnImage.toImage().convertToFormat(QImage::Format_ARGB32);
 
-        // Remove any remaining white pixels
         for (int y = 0; y < imgOff.height(); y++) {
             for (int x = 0; x < imgOff.width(); x++) {
                 QColor color(imgOff.pixel(x, y));
@@ -50,65 +51,13 @@ void LEDComponent::loadImages()
         m_ledOffImage = QPixmap::fromImage(imgOff);
         m_ledOnImage = QPixmap::fromImage(imgOn);
 
-        // Scale with high quality
-        m_ledOnImage = m_ledOnImage.scaled(100, 100, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-        m_ledOffImage = m_ledOffImage.scaled(100, 100, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+        // Scale to component size
+        m_ledOnImage = m_ledOnImage.scaled(150, 150, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+        m_ledOffImage = m_ledOffImage.scaled(150, 150, Qt::KeepAspectRatio, Qt::SmoothTransformation);
 
-        qDebug() << "LED images loaded with extra transparency check";
+        qDebug() << "LED images loaded successfully";
     } else {
-        qDebug() << "Failed to load LED images, using defaults";
-        createDefaultImages();
-    }
-}
-
-void LEDComponent::createDefaultImages()
-{
-    // Create high-resolution LED OFF image
-    m_ledOffImage = QPixmap(120, 120);  // Larger canvas
-    m_ledOffImage.fill(Qt::transparent);
-    {
-        QPainter painter(&m_ledOffImage);
-        painter.setRenderHint(QPainter::Antialiasing);
-
-        // Draw LED body (darker gray when off)
-        QRadialGradient gradient(60, 50, 40);
-        gradient.setColorAt(0, QColor(180, 180, 180));
-        gradient.setColorAt(0.7, QColor(120, 120, 120));
-        gradient.setColorAt(1, QColor(80, 80, 80));
-
-        painter.setBrush(gradient);
-        painter.setPen(QPen(QColor(60, 60, 60), 2));
-        painter.drawEllipse(20, 15, 80, 80);
-
-        // Draw LED legs
-        painter.setBrush(QColor(169, 169, 169));
-        painter.setPen(Qt::NoPen);
-        painter.drawRect(35, 95, 10, 25);  // Left leg
-        painter.drawRect(75, 95, 10, 25);  // Right leg
-    }
-
-    // Create high-resolution LED ON image (bright yellow)
-    m_ledOnImage = QPixmap(120, 120);
-    m_ledOnImage.fill(Qt::transparent);
-    {
-        QPainter painterOn(&m_ledOnImage);
-        painterOn.setRenderHint(QPainter::Antialiasing);
-
-        // Bright glow effect
-        QRadialGradient glowGradient(60, 50, 50);
-        glowGradient.setColorAt(0, QColor(255, 255, 100, 200));
-        glowGradient.setColorAt(0.5, QColor(255, 220, 0));
-        glowGradient.setColorAt(1, QColor(255, 165, 0));
-
-        painterOn.setBrush(glowGradient);
-        painterOn.setPen(QPen(QColor(255, 200, 0), 2));
-        painterOn.drawEllipse(20, 15, 80, 80);
-
-        // Draw LED legs
-        painterOn.setBrush(QColor(169, 169, 169));
-        painterOn.setPen(Qt::NoPen);
-        painterOn.drawRect(35, 95, 10, 25);
-        painterOn.drawRect(75, 95, 10, 25);
+        qDebug() << "ERROR: Failed to load LED images!";
     }
 }
 
@@ -126,13 +75,101 @@ void LEDComponent::paintEvent(QPaintEvent *event)
     painter.setRenderHint(QPainter::Antialiasing);
     painter.setRenderHint(QPainter::SmoothPixmapTransform);
 
-    // Draw LED image WITHOUT pin label
+    // Draw LED image only
     QPixmap currentImage = m_isOn ? m_ledOnImage : m_ledOffImage;
 
     if (!currentImage.isNull()) {
-        // Draw at full size - no text, no label
         painter.drawPixmap(0, 0, width(), height(), currentImage);
     }
+}
 
-    // REMOVED: Pin number drawing code
+QPoint LEDComponent::getPositiveLegPos() const
+{
+    // LONG leg (positive) is on the LEFT at: X=282, Y=427
+
+    double scaleX = (double)width() / 600.0;
+    double scaleY = (double)height() / 500.0;
+
+    int legX = (int)(282 * scaleX);  // LEFT leg
+    int legY = (int)(427 * scaleY);
+
+    qDebug() << "getPositiveLegPos (LONG/LEFT): legX=" << legX << "legY=" << legY;
+
+    QPoint parentPos = mapToParent(QPoint(legX, legY));
+    qDebug() << "getPositiveLegPos: parentPos=" << parentPos;
+
+    return parentPos;
+}
+
+QPoint LEDComponent::getNegativeLegPos() const
+{
+    // SHORT leg (negative) is on the RIGHT at: X=319, Y=360
+
+    double scaleX = (double)width() / 600.0;
+    double scaleY = (double)height() / 500.0;
+
+    int legX = (int)(319 * scaleX);  // RIGHT leg
+    int legY = (int)(360 * scaleY);
+
+    qDebug() << "getNegativeLegPos (SHORT/RIGHT): legX=" << legX << "legY=" << legY;
+
+    QPoint parentPos = mapToParent(QPoint(legX, legY));
+    qDebug() << "getNegativeLegPos: parentPos=" << parentPos;
+
+    return parentPos;
+}
+
+bool LEDComponent::isClickOnLeg(const QPoint &clickPos, bool &isPositive)
+{
+    double scaleX = (double)width() / 600.0;
+    double scaleY = (double)height() / 500.0;
+
+    const int legWidth  = 20;
+    const int legHeight = 40;   // IMPORTANT: fixed height
+
+    // LONG LEG (POSITIVE) - LEFT
+    int longLegX = (int)(282 * scaleX) - legWidth / 2;
+    int longLegY = (int)(427 * scaleY);
+    QRect positiveLegArea(longLegX, longLegY, legWidth, legHeight);
+
+    if (positiveLegArea.contains(clickPos)) {
+        isPositive = true;
+        qDebug() << "Click detected on POSITIVE leg";
+        return true;
+    }
+
+    // SHORT LEG (NEGATIVE) - RIGHT
+    int shortLegX = (int)(319 * scaleX) - legWidth / 2;
+    int shortLegY = (int)(360 * scaleY);
+    QRect negativeLegArea(shortLegX, shortLegY, legWidth, legHeight);
+
+    if (negativeLegArea.contains(clickPos)) {
+        isPositive = false;
+        qDebug() << "Click detected on NEGATIVE leg";
+        return true;
+    }
+
+    return false;
+}
+
+
+void LEDComponent::mousePressEvent(QMouseEvent *event)
+{
+    qDebug() << "=== LED mousePressEvent ===";
+    qDebug() << "Button:" << event->button();
+    qDebug() << "Position:" << event->pos();
+
+    if (event->button() == Qt::LeftButton) {
+        bool isPositive;
+
+        if (isClickOnLeg(event->pos(), isPositive)) {
+            qDebug() << "LED leg clicked!" << (isPositive ? "POSITIVE (Long)" : "NEGATIVE (Short)");
+            emit legClicked(this, isPositive);
+            qDebug() << "legClicked signal emitted";
+            return;
+        }
+    }
+
+    qDebug() << "Not on leg, calling Component::mousePressEvent";
+    Component::mousePressEvent(event);
 }

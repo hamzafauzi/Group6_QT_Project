@@ -2,6 +2,7 @@
 #include <QFont>
 #include <QDebug>
 #include <QLabel>
+#include "pinselectordialog.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -380,6 +381,14 @@ void MainWindow::testComponents()
     // Map pin 13 to LED component
     ledComponents[13] = testLED;
 
+    // Connect LED leg clicks to handler
+    connect(testLED, &LEDComponent::legClicked,
+            this, &MainWindow::onLEDLegClicked);
+
+    // Connect LED movement to update wires
+    connect(testLED, &Component::componentMoved,
+            this, &MainWindow::onComponentMoved);
+
     // Create button on pin 2
     testButton = new ButtonComponent(simulatorPanel);
     testButton->setPosition(QPoint(220, 40));
@@ -404,4 +413,103 @@ void MainWindow::testComponents()
     });
 
     logMessage("Components created: LED (Pin 13), Button (Pin 2), Resistor (220Ω)");
+}
+
+void MainWindow::onLEDLegClicked(LEDComponent *led, bool isPositiveLeg)
+{
+    qDebug() << "=== onLEDLegClicked called ===";
+    qDebug() << "LED:" << led << "IsPositive:" << isPositiveLeg;
+
+    logMessage(QString("LED leg clicked: %1").arg(isPositiveLeg ? "Positive (+)" : "Negative (-)"));
+
+    // Open pin selector dialog
+    PinSelectorDialog dialog(this);
+
+    if (dialog.exec() == QDialog::Accepted) {
+        int selectedPin = dialog.getSelectedPin();
+
+        qDebug() << "Pin selected:" << selectedPin;
+        logMessage(QString("Selected Arduino Pin: %1").arg(selectedPin));
+
+        // Create wire connection
+        createWireConnection(led, isPositiveLeg, selectedPin);
+
+        logMessage(QString("Wire connected from LED %1 leg to Pin %2")
+                       .arg(isPositiveLeg ? "positive" : "negative")
+                       .arg(selectedPin));
+    } else {
+        qDebug() << "Pin selection canceled";
+        logMessage("Pin selection canceled");
+    }
+
+    qDebug() << "=== onLEDLegClicked finished ===";
+}
+
+void MainWindow::createWireConnection(LEDComponent *led, bool isPositiveLeg, int arduinoPin)
+{
+    qDebug() << "=== createWireConnection called ===";
+    qDebug() << "LED:" << led;
+    qDebug() << "IsPositive:" << isPositiveLeg;
+    qDebug() << "Arduino Pin:" << arduinoPin;
+
+    // Create new wire widget
+    Wire *wire = new Wire(simulatorPanel);
+    qDebug() << "Wire created:" << wire;
+
+    // Get LED leg position
+    QPoint ledLegPos = isPositiveLeg ? led->getPositiveLegPos() : led->getNegativeLegPos();
+    qDebug() << "LED leg position:" << ledLegPos;
+
+    // Get Arduino pin position
+    QPoint arduinoPinPos = simulatorPanel->getPinPosition(arduinoPin);
+    qDebug() << "Arduino pin position:" << arduinoPinPos;
+
+    // Set wire endpoints
+    wire->setStartPoint(ledLegPos);
+    wire->setEndPoint(arduinoPinPos);
+
+    // Set wire color based on leg type
+    if (isPositiveLeg) {
+        wire->setColor(Qt::red);
+        qDebug() << "Wire color: RED (positive)";
+    } else {
+        wire->setColor(Qt::white);
+        qDebug() << "Wire color: WHITE (negative)";
+    }
+
+    wire->setThickness(3);
+    wire->show();
+    wire->raise();
+
+    qDebug() << "Wire shown and raised";
+
+    // Store wire connection
+    WireConnection connection;
+    connection.wire = wire;
+    connection.led = led;
+    connection.arduinoPin = arduinoPin;
+    connection.isPositiveLeg = isPositiveLeg;
+    wireConnections.append(connection);
+
+    qDebug() << "Wire stored. Total wires:" << wireConnections.size();
+    qDebug() << "=== createWireConnection finished ===";
+}
+
+void MainWindow::onComponentMoved(Component *component)
+{
+    LEDComponent *led = qobject_cast<LEDComponent*>(component);
+    if (!led) return;
+
+    qDebug() << "Component moved, updating wires...";
+
+    for (WireConnection &conn : wireConnections) {
+        if (conn.led == led) {
+            QPoint newLegPos = conn.isPositiveLeg ?
+                                   led->getPositiveLegPos() :
+                                   led->getNegativeLegPos();
+
+            conn.wire->setStartPoint(newLegPos);
+            qDebug() << "Wire updated to new position:" << newLegPos;
+        }
+    }
 }

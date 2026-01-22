@@ -10,12 +10,14 @@
 #include <QHBoxLayout>
 #include <QSplitter>
 #include <QMap>
+#include <QList>
 #include "ledcomponent.h"
 #include "buttoncomponent.h"
 #include "resistorcomponent.h"
 #include "simulatorpanel.h"
 #include "arduinocompiler.h"
 #include "simulationengine.h"
+#include "wire.h"
 
 class MainWindow : public QMainWindow
 {
@@ -39,14 +41,18 @@ private slots:
     void onPinStateChanged(int pin, PinState state);
     void onSimulationLog(const QString &message);
 
+    // Component interaction slots
+    void onLEDLegClicked(LEDComponent *led, bool isPositiveLeg);
+    void onComponentMoved(Component *component);
+
 private:
     // UI Components
     QPushButton *buildButton;
     QPushButton *runButton;
     QTextEdit *codeEditor;
     SimulatorPanel *simulatorPanel;
-    QTextBrowser *statusOutput;        // Status messages panel
-    QTextBrowser *compilationOutput;   // Compilation output panel
+    QTextBrowser *statusOutput;
+    QTextBrowser *compilationOutput;
 
     // Test components
     LEDComponent *testLED;
@@ -60,6 +66,15 @@ private:
     // Component mapping (pin -> component)
     QMap<int, LEDComponent*> ledComponents;
 
+    // Wire connection tracking
+    struct WireConnection {
+        Wire *wire;
+        LEDComponent *led;
+        int arduinoPin;
+        bool isPositiveLeg;
+    };
+    QList<WireConnection> wireConnections;
+
     // Helper methods
     void setupUI();
     void createControlPanel(QVBoxLayout *mainLayout);
@@ -67,6 +82,7 @@ private:
     void createDebugPanel(QVBoxLayout *mainLayout);
     void logMessage(const QString &message, bool isCompilation = false);
     void testComponents();
+    void createWireConnection(LEDComponent *led, bool isPositiveLeg, int arduinoPin);
 
     // Compilation flag
     bool isCompilationSuccessful;
