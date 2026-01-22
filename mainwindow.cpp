@@ -1,6 +1,7 @@
 #include "mainwindow.h"
 #include <QFont>
 #include <QDebug>
+#include <QLabel>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -62,7 +63,6 @@ void MainWindow::setupUI()
     } else {
         logMessage("✗ WARNING: Arduino CLI not found. Compilation will fail.");
         logMessage("  Install it from: https://arduino.github.io/arduino-cli/");
-        logMessage("  Or run: choco install arduino-cli");
     }
 
     testComponents();
@@ -135,7 +135,7 @@ void MainWindow::createMiddleSection(QVBoxLayout *mainLayout)
 
     // Code editor
     codeEditor = new QTextEdit();
-    QFont monoFont("Consolas");  // Windows monospace font
+    QFont monoFont("Consolas");
     monoFont.setPointSize(11);
     codeEditor->setFont(monoFont);
     codeEditor->setStyleSheet(
@@ -175,33 +175,98 @@ void MainWindow::createMiddleSection(QVBoxLayout *mainLayout)
 
 void MainWindow::createDebugPanel(QVBoxLayout *mainLayout)
 {
-    debugOutput = new QTextBrowser();
-    debugOutput->setMaximumHeight(200);
-    debugOutput->setStyleSheet(
+    // Create horizontal splitter for two output panels
+    QSplitter *outputSplitter = new QSplitter(Qt::Horizontal);
+    outputSplitter->setMaximumHeight(200);
+
+    // ===== STATUS OUTPUT (Left) =====
+    QWidget *statusWidget = new QWidget();
+    QVBoxLayout *statusLayout = new QVBoxLayout(statusWidget);
+    statusLayout->setContentsMargins(0, 0, 0, 0);
+    statusLayout->setSpacing(0);
+
+    QLabel *statusLabel = new QLabel("Status Messages");
+    statusLabel->setStyleSheet(
+        "QLabel {"
+        "   background-color: #1e1e1e;"
+        "   color: #ffffff;"
+        "   font-weight: bold;"
+        "   padding: 5px;"
+        "   font-size: 11px;"
+        "   border: 1px solid #555555;"
+        "}"
+        );
+    statusLayout->addWidget(statusLabel);
+
+    statusOutput = new QTextBrowser();
+    statusOutput->setStyleSheet(
         "QTextBrowser {"
         "   background-color: #2b2b2b;"
         "   color: #00ff00;"
         "   font-family: 'Consolas';"
         "   font-size: 10px;"
         "   border: 1px solid #555555;"
-        "   border-radius: 5px;"
+        "   border-top: none;"
         "   padding: 5px;"
         "}"
         );
+    statusLayout->addWidget(statusOutput);
 
-    mainLayout->addWidget(debugOutput);
+    // ===== COMPILATION OUTPUT (Right) =====
+    QWidget *compilationWidget = new QWidget();
+    QVBoxLayout *compilationLayout = new QVBoxLayout(compilationWidget);
+    compilationLayout->setContentsMargins(0, 0, 0, 0);
+    compilationLayout->setSpacing(0);
+
+    QLabel *compilationLabel = new QLabel("Compilation Output");
+    compilationLabel->setStyleSheet(
+        "QLabel {"
+        "   background-color: #1e1e1e;"
+        "   color: #ffffff;"
+        "   font-weight: bold;"
+        "   padding: 5px;"
+        "   font-size: 11px;"
+        "   border: 1px solid #555555;"
+        "}"
+        );
+    compilationLayout->addWidget(compilationLabel);
+
+    compilationOutput = new QTextBrowser();
+    compilationOutput->setStyleSheet(
+        "QTextBrowser {"
+        "   background-color: #2b2b2b;"
+        "   color: #ffaa00;"
+        "   font-family: 'Consolas';"
+        "   font-size: 10px;"
+        "   border: 1px solid #555555;"
+        "   border-top: none;"
+        "   padding: 5px;"
+        "}"
+        );
+    compilationLayout->addWidget(compilationOutput);
+
+    // Add both panels to splitter
+    outputSplitter->addWidget(statusWidget);
+    outputSplitter->addWidget(compilationWidget);
+    outputSplitter->setStretchFactor(0, 1);
+    outputSplitter->setStretchFactor(1, 1);
+
+    mainLayout->addWidget(outputSplitter);
 }
 
 void MainWindow::onBuildClicked()
 {
-    logMessage("\n" + QString("=").repeated(60));
-    logMessage("BUILD STARTED");
-    logMessage(QString("=").repeated(60));
+    // Clear compilation output
+    compilationOutput->clear();
+
+    logMessage(QString("=").repeated(60), true);
+    logMessage("BUILD STARTED", true);
+    logMessage(QString("=").repeated(60), true);
 
     QString code = codeEditor->toPlainText();
 
     if (code.trimmed().isEmpty()) {
-        logMessage("ERROR: Code editor is empty!");
+        logMessage("ERROR: Code editor is empty!", true);
         isCompilationSuccessful = false;
         runButton->setEnabled(false);
         return;
@@ -218,7 +283,10 @@ void MainWindow::onRunClicked()
         return;
     }
 
-    logMessage("\n" + QString("=").repeated(60));
+    // Clear status output
+    statusOutput->clear();
+
+    logMessage(QString("=").repeated(60));
     logMessage("SIMULATION STARTED");
     logMessage(QString("=").repeated(60));
 
@@ -228,20 +296,27 @@ void MainWindow::onRunClicked()
 
 void MainWindow::onCompilationStarted()
 {
-    logMessage("Compiling with Arduino CLI...");
+    logMessage("Compiling with Arduino CLI...", true);
     buildButton->setEnabled(false);
 }
 
 void MainWindow::onCompilationOutput(const QString &output)
 {
-    logMessage(output);
+    compilationOutput->append(output);
+    QTextCursor cursor = compilationOutput->textCursor();
+    cursor.movePosition(QTextCursor::End);
+    compilationOutput->setTextCursor(cursor);
 }
 
 void MainWindow::onCompilationError(const QString &error)
 {
-    debugOutput->setTextColor(QColor(255, 100, 100));
-    logMessage(error);
-    debugOutput->setTextColor(QColor(0, 255, 0));
+    compilationOutput->setTextColor(QColor(255, 100, 100));
+    compilationOutput->append(error);
+    compilationOutput->setTextColor(QColor(255, 170, 0));
+
+    QTextCursor cursor = compilationOutput->textCursor();
+    cursor.movePosition(QTextCursor::End);
+    compilationOutput->setTextCursor(cursor);
 }
 
 void MainWindow::onCompilationFinished(bool success)
@@ -251,21 +326,26 @@ void MainWindow::onCompilationFinished(bool success)
     runButton->setEnabled(success);
 
     if (success) {
-        logMessage(QString("=").repeated(60));
-        logMessage("✓ BUILD SUCCESSFUL - Ready to run simulation");
-        logMessage(QString("=").repeated(60));
+        logMessage(QString("=").repeated(60), true);
+        logMessage("✓ BUILD SUCCESSFUL - Ready to run simulation", true);
+        logMessage(QString("=").repeated(60), true);
     } else {
-        logMessage(QString("=").repeated(60));
-        logMessage("✗ BUILD FAILED - Fix errors and try again");
-        logMessage(QString("=").repeated(60));
+        logMessage(QString("=").repeated(60), true);
+        logMessage("✗ BUILD FAILED - Fix errors and try again", true);
+        logMessage(QString("=").repeated(60), true);
     }
 }
 
 void MainWindow::onPinStateChanged(int pin, PinState state)
 {
+    qDebug() << "PIN STATE CHANGED:" << pin << "=" << (state == PIN_HIGH ? "HIGH" : "LOW");
+
     // Update LED component if it exists for this pin
     if (ledComponents.contains(pin)) {
         ledComponents[pin]->setState(state == PIN_HIGH);
+        logMessage(QString("LED Pin %1 turned %2").arg(pin).arg(state == PIN_HIGH ? "ON ✅" : "OFF ❌"));
+    } else {
+        logMessage(QString("Warning: No LED component for pin %1").arg(pin));
     }
 }
 
@@ -274,37 +354,45 @@ void MainWindow::onSimulationLog(const QString &message)
     logMessage(message);
 }
 
-void MainWindow::logMessage(const QString &message)
+void MainWindow::logMessage(const QString &message, bool isCompilation)
 {
-    debugOutput->append(message);
-    QTextCursor cursor = debugOutput->textCursor();
-    cursor.movePosition(QTextCursor::End);
-    debugOutput->setTextCursor(cursor);
+    if (isCompilation) {
+        compilationOutput->append(message);
+        QTextCursor cursor = compilationOutput->textCursor();
+        cursor.movePosition(QTextCursor::End);
+        compilationOutput->setTextCursor(cursor);
+    } else {
+        statusOutput->append(message);
+        QTextCursor cursor = statusOutput->textCursor();
+        cursor.movePosition(QTextCursor::End);
+        statusOutput->setTextCursor(cursor);
+    }
 }
 
 void MainWindow::testComponents()
 {
-    // Create LED on pin 13 - with new larger size
+    // Create LED on pin 13 - with larger size
     testLED = new LEDComponent(simulatorPanel);
-    testLED->setPosition(QPoint(50, 80));  // Adjusted position
+    testLED->setPosition(QPoint(50, 40));
     testLED->setPin(13);
     testLED->show();
 
+    // Map pin 13 to LED component
     ledComponents[13] = testLED;
 
-    // Button
+    // Create button on pin 2
     testButton = new ButtonComponent(simulatorPanel);
-    testButton->setPosition(QPoint(180, 80));  // More spacing
+    testButton->setPosition(QPoint(220, 40));
     testButton->setPin(2);
     testButton->show();
 
-    // Resistor
+    // Create resistor
     testResistor = new ResistorComponent(simulatorPanel);
-    testResistor->setPosition(QPoint(310, 80));
+    testResistor->setPosition(QPoint(390, 40));
     testResistor->setResistance(220);
     testResistor->show();
 
-    // Manual button control
+    // Manual button control (for testing)
     connect(testButton, &ButtonComponent::buttonPressed, [this]() {
         testLED->setState(true);
         logMessage("Manual: Button pressed - LED ON");

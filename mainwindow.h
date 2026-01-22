@@ -9,6 +9,7 @@
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QSplitter>
+#include <QMap>
 #include "ledcomponent.h"
 #include "buttoncomponent.h"
 #include "resistorcomponent.h"
@@ -28,13 +29,13 @@ private slots:
     void onBuildClicked();
     void onRunClicked();
 
-    // Compiler slots - NEW
+    // Compiler slots
     void onCompilationStarted();
     void onCompilationOutput(const QString &output);
     void onCompilationError(const QString &error);
     void onCompilationFinished(bool success);
 
-    // Simulation slots - NEW
+    // Simulation slots
     void onPinStateChanged(int pin, PinState state);
     void onSimulationLog(const QString &message);
 
@@ -44,14 +45,15 @@ private:
     QPushButton *runButton;
     QTextEdit *codeEditor;
     SimulatorPanel *simulatorPanel;
-    QTextBrowser *debugOutput;
+    QTextBrowser *statusOutput;        // Status messages panel
+    QTextBrowser *compilationOutput;   // Compilation output panel
 
     // Test components
     LEDComponent *testLED;
     ButtonComponent *testButton;
     ResistorComponent *testResistor;
 
-    // Arduino components - NEW
+    // Arduino components
     ArduinoCompiler *compiler;
     SimulationEngine *simulationEngine;
 
@@ -63,7 +65,7 @@ private:
     void createControlPanel(QVBoxLayout *mainLayout);
     void createMiddleSection(QVBoxLayout *mainLayout);
     void createDebugPanel(QVBoxLayout *mainLayout);
-    void logMessage(const QString &message);
+    void logMessage(const QString &message, bool isCompilation = false);
     void testComponents();
 
     // Compilation flag
