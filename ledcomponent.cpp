@@ -7,9 +7,11 @@ LEDComponent::LEDComponent(QWidget *parent)
     : Component(parent)
     , m_isOn(false)
 {
-    setFixedSize(100, 100);  // Bigger size
+    setFixedSize(150, 150);
     loadImages();
-    setStyleSheet("background: transparent;");  // No background
+    setStyleSheet("background: transparent;");
+    setAttribute(Qt::WA_TranslucentBackground);
+    setAutoFillBackground(false);
 }
 
 LEDComponent::~LEDComponent()
