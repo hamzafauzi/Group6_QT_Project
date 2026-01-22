@@ -11,6 +11,7 @@ class SimulatorPanel : public QWidget
 
 public:
     explicit SimulatorPanel(QWidget *parent = nullptr);
+    QPoint getPinPosition(int pin) const;
 
 protected:
     void paintEvent(QPaintEvent *event) override;
