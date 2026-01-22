@@ -2,6 +2,8 @@
 #include <QPainter>
 #include <QFile>
 #include <QDebug>
+#include <QtMath>
+#include <QMouseEvent>
 
 ResistorComponent::ResistorComponent(QWidget *parent)
     : Component(parent)
@@ -85,8 +87,91 @@ void ResistorComponent::setResistance(int ohms)
     update();
 }
 
+QPoint ResistorComponent::getLeftLeadPos() const
+{
+    // LEFT lead is at: X=14, Y=252 (in 600x600 image)
+
+    double scaleX = (double)width() / 600.0;
+    double scaleY = (double)height() / 600.0;
+
+    int leadX = (int)(14 * scaleX);
+    int leadY = (int)(252 * scaleY);
+
+    qDebug() << "getLeftLeadPos: leadX=" << leadX << "leadY=" << leadY;
+
+    QPoint parentPos = mapToParent(QPoint(leadX, leadY));
+    qDebug() << "getLeftLeadPos: parentPos=" << parentPos;
+
+    return parentPos;
+}
+
+QPoint ResistorComponent::getRightLeadPos() const
+{
+    // RIGHT lead is at: X=570, Y=252 (in 600x600 image)
+
+    double scaleX = (double)width() / 600.0;
+    double scaleY = (double)height() / 600.0;
+
+    int leadX = (int)(570 * scaleX);
+    int leadY = (int)(252 * scaleY);
+
+    qDebug() << "getRightLeadPos: leadX=" << leadX << "leadY=" << leadY;
+
+    QPoint parentPos = mapToParent(QPoint(leadX, leadY));
+    qDebug() << "getRightLeadPos: parentPos=" << parentPos;
+
+    return parentPos;
+}
+
+bool ResistorComponent::isClickOnLead(const QPoint &clickPos, bool &isLeftLead)
+{
+    double scaleX = (double)width() / 600.0;
+    double scaleY = (double)height() / 600.0;
+
+    // Use EXACT lead tip positions
+    const int clickRadius = 15;  // 15 pixel radius around lead tip
+
+    // LEFT LEAD - exact position X=14, Y=252
+    int leftLeadX = (int)(14 * scaleX);
+    int leftLeadY = (int)(252 * scaleY);
+
+    // Calculate distance from click to left lead
+    int distToLeft = qSqrt(qPow(clickPos.x() - leftLeadX, 2) + qPow(clickPos.y() - leftLeadY, 2));
+
+    qDebug() << "Click at:" << clickPos;
+    qDebug() << "Left lead center:" << QPoint(leftLeadX, leftLeadY) << "Distance:" << distToLeft;
+
+    if (distToLeft <= clickRadius) {
+        isLeftLead = true;
+        qDebug() << "✓✓✓ Click detected on LEFT lead";
+        return true;
+    }
+
+    // RIGHT LEAD - exact position X=570, Y=252
+    int rightLeadX = (int)(570 * scaleX);
+    int rightLeadY = (int)(252 * scaleY);
+
+    // Calculate distance from click to right lead
+    int distToRight = qSqrt(qPow(clickPos.x() - rightLeadX, 2) + qPow(clickPos.y() - rightLeadY, 2));
+
+    qDebug() << "Right lead center:" << QPoint(rightLeadX, rightLeadY) << "Distance:" << distToRight;
+
+    if (distToRight <= clickRadius) {
+        isLeftLead = false;
+        qDebug() << "✓✓✓ Click detected on RIGHT lead";
+        return true;
+    }
+
+    qDebug() << "✗ Click not on any lead (too far from both)";
+    return false;
+}
+
 void ResistorComponent::mousePressEvent(QMouseEvent *event)
 {
+    qDebug() << "=== Resistor mousePressEvent ===";
+    qDebug() << "Button:" << event->button();
+    qDebug() << "Position:" << event->pos();
+
     // Handle right-click
     if (event->button() == Qt::RightButton) {
         qDebug() << "Resistor: Right-click detected";
@@ -95,7 +180,19 @@ void ResistorComponent::mousePressEvent(QMouseEvent *event)
         return;
     }
 
-    // Handle other mouse events
+    // Handle left-click on leads
+    if (event->button() == Qt::LeftButton) {
+        bool isLeftLead;
+
+        if (isClickOnLead(event->pos(), isLeftLead)) {
+            qDebug() << "Resistor lead clicked!" << (isLeftLead ? "LEFT" : "RIGHT");
+            emit leadClicked(this, isLeftLead);
+            qDebug() << "leadClicked signal emitted";
+            return;
+        }
+    }
+
+    qDebug() << "Not on lead, calling Component::mousePressEvent";
     Component::mousePressEvent(event);
 }
 

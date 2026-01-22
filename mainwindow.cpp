@@ -523,6 +523,8 @@ void MainWindow::testComponents()
 
     allComponents.append(testResistor);
 
+    connect(testResistor, &ResistorComponent::leadClicked,
+            this, &MainWindow::onResistorLeadClicked);
     connect(testResistor, &Component::componentMoved,
             this, &MainWindow::onComponentMoved);
     connect(testResistor, &Component::componentRightClicked,
@@ -572,6 +574,65 @@ void MainWindow::onLEDLegClicked(LEDComponent *led, bool isPositiveLeg)
     qDebug() << "=== onLEDLegClicked finished ===";
 }
 
+void MainWindow::onResistorLeadClicked(ResistorComponent *resistor, bool isLeftLead)
+{
+    qDebug() << "=== onResistorLeadClicked called ===";
+    qDebug() << "Resistor:" << resistor << "IsLeftLead:" << isLeftLead;
+
+    logMessage(QString("Resistor lead clicked: %1").arg(isLeftLead ? "Left" : "Right"));
+
+    // Open connection selector dialog
+    ConnectionSelectorDialog dialog(this);
+
+    // Populate with available LEDs
+    dialog.populateLEDList(getAllLEDs());
+
+    if (dialog.exec() == QDialog::Accepted) {
+        if (dialog.getConnectionType() == ConnectionSelectorDialog::ARDUINO_PIN) {
+            int selectedPin = dialog.getSelectedPin();
+            qDebug() << "Pin selected:" << selectedPin;
+            logMessage(QString("Selected Arduino Pin: %1").arg(selectedPin));
+
+            // Create wire connection for resistor to Arduino pin
+            createResistorToArduinoWire(resistor, isLeftLead, selectedPin);
+
+            logMessage(QString("✓ Wire connected from Resistor %1 lead to Pin %2")
+                           .arg(isLeftLead ? "left" : "right")
+                           .arg(selectedPin));
+        } else {
+            // LED leg selected
+            int ledId = dialog.getSelectedLEDId();
+            bool isPositive = dialog.isPositiveLeg();
+
+            // Find the LED component
+            LEDComponent *targetLED = nullptr;
+            for (auto led : ledComponents) {
+                if (led->componentId() == ledId) {
+                    targetLED = led;
+                    break;
+                }
+            }
+
+            if (targetLED) {
+                // Create wire connection for resistor to LED leg
+                createResistorToLEDWire(resistor, isLeftLead, targetLED, isPositive);
+
+                logMessage(QString("✓ Wire connected from Resistor %1 lead to LED (Pin %2) %3 leg")
+                               .arg(isLeftLead ? "left" : "right")
+                               .arg(targetLED->getPin())
+                               .arg(isPositive ? "positive" : "negative"));
+            } else {
+                logMessage("ERROR: Selected LED not found!");
+            }
+        }
+    } else {
+        qDebug() << "Connection selection canceled";
+        logMessage("Connection selection canceled");
+    }
+
+    qDebug() << "=== onResistorLeadClicked finished ===";
+}
+
 void MainWindow::createWireConnection(LEDComponent *led, bool isPositiveLeg, int arduinoPin)
 {
     qDebug() << "=== createWireConnection called ===";
@@ -610,33 +671,172 @@ void MainWindow::createWireConnection(LEDComponent *led, bool isPositiveLeg, int
 
     qDebug() << "Wire shown and raised";
 
-    // Store wire connection
+    // Store wire connection with new structure
     WireConnection connection;
     connection.wire = wire;
-    connection.led = led;
-    connection.arduinoPin = arduinoPin;
-    connection.isPositiveLeg = isPositiveLeg;
+
+    connection.startPoint.type = LED_LEG;
+    connection.startPoint.led = led;
+    connection.startPoint.isPositiveLeg = isPositiveLeg;
+
+    connection.endPoint.type = ARDUINO_PIN;
+    connection.endPoint.arduinoPin = arduinoPin;
+
     wireConnections.append(connection);
 
     qDebug() << "Wire stored. Total wires:" << wireConnections.size();
     qDebug() << "=== createWireConnection finished ===";
 }
 
+void MainWindow::createResistorToArduinoWire(ResistorComponent *resistor, bool isLeftLead, int arduinoPin)
+{
+    qDebug() << "=== createResistorToArduinoWire called ===";
+
+    // Create new wire widget
+    Wire *wire = new Wire(simulatorPanel);
+
+    // Get resistor lead position
+    QPoint resistorLeadPos = isLeftLead ? resistor->getLeftLeadPos() : resistor->getRightLeadPos();
+    qDebug() << "Resistor lead position:" << resistorLeadPos;
+
+    // Get Arduino pin position
+    QPoint arduinoPinPos = simulatorPanel->getPinPosition(arduinoPin);
+    qDebug() << "Arduino pin position:" << arduinoPinPos;
+
+    // Set wire endpoints
+    wire->setStartPoint(resistorLeadPos);
+    wire->setEndPoint(arduinoPinPos);
+
+    // Set wire color (yellow for resistors)
+    wire->setColor(Qt::yellow);
+    wire->setThickness(3);
+    wire->show();
+    wire->raise();
+
+    // Store wire connection
+    WireConnection connection;
+    connection.wire = wire;
+
+    connection.startPoint.type = RESISTOR_LEAD;
+    connection.startPoint.resistor = resistor;
+    connection.startPoint.isLeftLead = isLeftLead;
+
+    connection.endPoint.type = ARDUINO_PIN;
+    connection.endPoint.arduinoPin = arduinoPin;
+
+    wireConnections.append(connection);
+
+    qDebug() << "Resistor wire stored. Total wires:" << wireConnections.size();
+}
+
+void MainWindow::createResistorToLEDWire(ResistorComponent *resistor, bool isLeftLead, LEDComponent *led, bool isPositiveLeg)
+{
+    qDebug() << "=== createResistorToLEDWire called ===";
+
+    // Create new wire widget
+    Wire *wire = new Wire(simulatorPanel);
+
+    // Get resistor lead position
+    QPoint resistorLeadPos = isLeftLead ? resistor->getLeftLeadPos() : resistor->getRightLeadPos();
+    qDebug() << "Resistor lead position:" << resistorLeadPos;
+
+    // Get LED leg position
+    QPoint ledLegPos = isPositiveLeg ? led->getPositiveLegPos() : led->getNegativeLegPos();
+    qDebug() << "LED leg position:" << ledLegPos;
+
+    // Set wire endpoints
+    wire->setStartPoint(resistorLeadPos);
+    wire->setEndPoint(ledLegPos);
+
+    // Set wire color (green for resistor-to-LED connections)
+    wire->setColor(Qt::green);
+    wire->setThickness(3);
+    wire->show();
+    wire->raise();
+
+    // Store wire connection
+    WireConnection connection;
+    connection.wire = wire;
+
+    connection.startPoint.type = RESISTOR_LEAD;
+    connection.startPoint.resistor = resistor;
+    connection.startPoint.isLeftLead = isLeftLead;
+
+    connection.endPoint.type = LED_LEG;
+    connection.endPoint.led = led;
+    connection.endPoint.isPositiveLeg = isPositiveLeg;
+
+    wireConnections.append(connection);
+
+    qDebug() << "Resistor-to-LED wire stored. Total wires:" << wireConnections.size();
+}
+
+QPoint MainWindow::getConnectionPoint(const ConnectionEndpoint &endpoint)
+{
+    switch (endpoint.type) {
+    case ARDUINO_PIN:
+        return simulatorPanel->getPinPosition(endpoint.arduinoPin);
+
+    case LED_LEG:
+        if (endpoint.led) {
+            return endpoint.isPositiveLeg ?
+                       endpoint.led->getPositiveLegPos() :
+                       endpoint.led->getNegativeLegPos();
+        }
+        break;
+
+    case RESISTOR_LEAD:
+        if (endpoint.resistor) {
+            return endpoint.isLeftLead ?
+                       endpoint.resistor->getLeftLeadPos() :
+                       endpoint.resistor->getRightLeadPos();
+        }
+        break;
+    }
+
+    return QPoint(0, 0);
+}
+
 void MainWindow::onComponentMoved(Component *component)
 {
-    LEDComponent *led = qobject_cast<LEDComponent*>(component);
-    if (!led) return;
-
     qDebug() << "Component moved, updating wires...";
 
-    for (WireConnection &conn : wireConnections) {
-        if (conn.led == led) {
-            QPoint newLegPos = conn.isPositiveLeg ?
-                                   led->getPositiveLegPos() :
-                                   led->getNegativeLegPos();
+    updateWiresForComponent(component);
+}
 
-            conn.wire->setStartPoint(newLegPos);
-            qDebug() << "Wire updated to new position:" << newLegPos;
+void MainWindow::updateWiresForComponent(Component *component)
+{
+    LEDComponent *led = qobject_cast<LEDComponent*>(component);
+    ResistorComponent *resistor = qobject_cast<ResistorComponent*>(component);
+
+    for (WireConnection &conn : wireConnections) {
+        bool needsUpdate = false;
+
+        // Check if this wire is connected to the moved component
+        if (conn.startPoint.type == LED_LEG && conn.startPoint.led == led) {
+            QPoint newPos = getConnectionPoint(conn.startPoint);
+            conn.wire->setStartPoint(newPos);
+            needsUpdate = true;
+        }
+        else if (conn.startPoint.type == RESISTOR_LEAD && conn.startPoint.resistor == resistor) {
+            QPoint newPos = getConnectionPoint(conn.startPoint);
+            conn.wire->setStartPoint(newPos);
+            needsUpdate = true;
+        }
+
+        if (conn.endPoint.type == LED_LEG && conn.endPoint.led == led) {
+            QPoint newPos = getConnectionPoint(conn.endPoint);
+            conn.wire->setEndPoint(newPos);
+            needsUpdate = true;
+        }
+        else if (conn.endPoint.type == RESISTOR_LEAD && conn.endPoint.resistor == resistor) {
+            QPoint newPos = getConnectionPoint(conn.endPoint);
+            conn.wire->setEndPoint(newPos);
+            needsUpdate = true;
+        }
+
+        if (needsUpdate) {
+            qDebug() << "Wire updated for moved component";
         }
     }
 }
@@ -711,6 +911,7 @@ void MainWindow::onAddResistor()
 
     allComponents.append(resistor);
 
+    connect(resistor, &ResistorComponent::leadClicked, this, &MainWindow::onResistorLeadClicked);
     connect(resistor, &Component::componentMoved, this, &MainWindow::onComponentMoved);
     connect(resistor, &Component::componentRightClicked, this, &MainWindow::onComponentRightClicked);
 
@@ -749,8 +950,27 @@ void MainWindow::deleteWiresForComponent(Component *component)
 {
     int deletedCount = 0;
 
+    LEDComponent *led = qobject_cast<LEDComponent*>(component);
+    ResistorComponent *resistor = qobject_cast<ResistorComponent*>(component);
+
     for (int i = wireConnections.size() - 1; i >= 0; --i) {
-        if (wireConnections[i].led == component) {
+        bool shouldDelete = false;
+
+        // Check if wire is connected to this component
+        if (led) {
+            if ((wireConnections[i].startPoint.type == LED_LEG && wireConnections[i].startPoint.led == led) ||
+                (wireConnections[i].endPoint.type == LED_LEG && wireConnections[i].endPoint.led == led)) {
+                shouldDelete = true;
+            }
+        }
+        else if (resistor) {
+            if ((wireConnections[i].startPoint.type == RESISTOR_LEAD && wireConnections[i].startPoint.resistor == resistor) ||
+                (wireConnections[i].endPoint.type == RESISTOR_LEAD && wireConnections[i].endPoint.resistor == resistor)) {
+                shouldDelete = true;
+            }
+        }
+
+        if (shouldDelete) {
             wireConnections[i].wire->deleteLater();
             wireConnections.removeAt(i);
             deletedCount++;
@@ -760,4 +980,18 @@ void MainWindow::deleteWiresForComponent(Component *component)
     if (deletedCount > 0) {
         logMessage(QString("  ↳ Deleted %1 wire(s)").arg(deletedCount));
     }
+}
+
+QList<LEDComponent*> MainWindow::getAllLEDs() const
+{
+    QList<LEDComponent*> leds;
+
+    for (Component *component : allComponents) {
+        LEDComponent *led = qobject_cast<LEDComponent*>(component);
+        if (led) {
+            leds.append(led);
+        }
+    }
+
+    return leds;
 }

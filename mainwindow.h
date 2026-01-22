@@ -11,7 +11,7 @@
 #include <QSplitter>
 #include <QMap>
 #include <QList>
-#include <QMenu>              // NEW
+#include <QMenu>
 #include "ledcomponent.h"
 #include "buttoncomponent.h"
 #include "resistorcomponent.h"
@@ -19,7 +19,8 @@
 #include "arduinocompiler.h"
 #include "simulationengine.h"
 #include "wire.h"
-#include "pinselectordialog.h"  // NEW
+#include "pinselectordialog.h"
+#include "connectionselectordialog.h"
 
 class MainWindow : public QMainWindow
 {
@@ -45,10 +46,11 @@ private slots:
 
     // Component interaction slots
     void onLEDLegClicked(LEDComponent *led, bool isPositiveLeg);
+    void onResistorLeadClicked(ResistorComponent *resistor, bool isLeftLead);
     void onComponentMoved(Component *component);
-    void onComponentRightClicked(Component *component);  // NEW
+    void onComponentRightClicked(Component *component);
 
-    // Component management slots - NEW
+    // Component management slots
     void onAddLED();
     void onAddButton();
     void onAddResistor();
@@ -58,13 +60,13 @@ private:
     // UI Components
     QPushButton *buildButton;
     QPushButton *runButton;
-    QPushButton *addComponentButton;  // NEW
+    QPushButton *addComponentButton;
     QTextEdit *codeEditor;
     SimulatorPanel *simulatorPanel;
     QTextBrowser *statusOutput;
     QTextBrowser *compilationOutput;
 
-    // Test components (will be removed)
+    // Test components
     LEDComponent *testLED;
     ButtonComponent *testButton;
     ResistorComponent *testResistor;
@@ -73,16 +75,34 @@ private:
     ArduinoCompiler *compiler;
     SimulationEngine *simulationEngine;
 
-    // Component management - NEW
-    QList<Component*> allComponents;  // Track all components
+    // Component management
+    QList<Component*> allComponents;
     QMap<int, LEDComponent*> ledComponents;
 
     // Wire connection tracking
+    enum ConnectionEndpointType {
+        ARDUINO_PIN,
+        LED_LEG,
+        RESISTOR_LEAD
+    };
+
+    struct ConnectionEndpoint {
+        ConnectionEndpointType type;
+        int arduinoPin;              // For ARDUINO_PIN
+        LEDComponent *led;           // For LED_LEG
+        ResistorComponent *resistor; // For RESISTOR_LEAD
+        bool isPositiveLeg;          // For LED_LEG (true = positive, false = negative)
+        bool isLeftLead;             // For RESISTOR_LEAD (true = left, false = right)
+
+        ConnectionEndpoint()
+            : type(ARDUINO_PIN), arduinoPin(-1), led(nullptr), resistor(nullptr),
+            isPositiveLeg(false), isLeftLead(false) {}
+    };
+
     struct WireConnection {
         Wire *wire;
-        LEDComponent *led;
-        int arduinoPin;
-        bool isPositiveLeg;
+        ConnectionEndpoint startPoint;
+        ConnectionEndpoint endPoint;
     };
     QList<WireConnection> wireConnections;
 
@@ -94,9 +114,15 @@ private:
     void logMessage(const QString &message, bool isCompilation = false);
     void testComponents();
     void createWireConnection(LEDComponent *led, bool isPositiveLeg, int arduinoPin);
-    void deleteWiresForComponent(Component *component);  // NEW
+    void createResistorToArduinoWire(ResistorComponent *resistor, bool isLeftLead, int arduinoPin);
+    void createResistorToLEDWire(ResistorComponent *resistor, bool isLeftLead, LEDComponent *led, bool isPositiveLeg);
+    void deleteWiresForComponent(Component *component);
+    void updateWiresForComponent(Component *component);
+    QPoint getConnectionPoint(const ConnectionEndpoint &endpoint);
 
-    // Component ID counter - NEW
+    QList<LEDComponent*> getAllLEDs() const;
+
+    // Component ID counter
     int nextComponentId;
 
     // Compilation flag

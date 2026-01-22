@@ -16,6 +16,13 @@ public:
 
     QString componentType() const override { return "Resistor"; }
 
+    // Get lead positions in parent coordinates
+    QPoint getLeftLeadPos() const;
+    QPoint getRightLeadPos() const;
+
+signals:
+    void leadClicked(ResistorComponent *resistor, bool isLeftLead);
+
 protected:
     void paintEvent(QPaintEvent *event) override;
     void mousePressEvent(QMouseEvent *event) override;
@@ -26,6 +33,7 @@ private:
 
     void loadImage();
     void createDefaultImage();
+    bool isClickOnLead(const QPoint &clickPos, bool &isLeftLead);
 };
 
 #endif // RESISTORCOMPONENT_H
