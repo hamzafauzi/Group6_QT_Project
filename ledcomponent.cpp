@@ -81,6 +81,8 @@ void LEDComponent::paintEvent(QPaintEvent *event)
     if (!currentImage.isNull()) {
         painter.drawPixmap(0, 0, width(), height(), currentImage);
     }
+
+    // No visual debug markers - clean LED appearance
 }
 
 QPoint LEDComponent::getPositiveLegPos() const
@@ -124,31 +126,41 @@ bool LEDComponent::isClickOnLeg(const QPoint &clickPos, bool &isPositive)
     double scaleX = (double)width() / 600.0;
     double scaleY = (double)height() / 500.0;
 
-    const int legWidth  = 20;
-    const int legHeight = 40;   // IMPORTANT: fixed height
+    // Use EXACT leg tip positions (same as getPositiveLegPos/getNegativeLegPos)
+    const int clickRadius = 15;  // 15 pixel radius around leg tip
 
-    // LONG LEG (POSITIVE) - LEFT
-    int longLegX = (int)(282 * scaleX) - legWidth / 2;
-    int longLegY = (int)(427 * scaleY);
-    QRect positiveLegArea(longLegX, longLegY, legWidth, legHeight);
-
-    if (positiveLegArea.contains(clickPos)) {
-        isPositive = true;
-        qDebug() << "Click detected on POSITIVE leg";
-        return true;
-    }
-
-    // SHORT LEG (NEGATIVE) - RIGHT
-    int shortLegX = (int)(319 * scaleX) - legWidth / 2;
+    // SHORT LEG (NEGATIVE) - exact position X=319, Y=360
+    int shortLegX = (int)(319 * scaleX);
     int shortLegY = (int)(360 * scaleY);
-    QRect negativeLegArea(shortLegX, shortLegY, legWidth, legHeight);
 
-    if (negativeLegArea.contains(clickPos)) {
+    // Calculate distance from click to short leg tip
+    int distToShort = qSqrt(qPow(clickPos.x() - shortLegX, 2) + qPow(clickPos.y() - shortLegY, 2));
+
+    qDebug() << "Click at:" << clickPos;
+    qDebug() << "Short leg center:" << QPoint(shortLegX, shortLegY) << "Distance:" << distToShort;
+
+    if (distToShort <= clickRadius) {
         isPositive = false;
-        qDebug() << "Click detected on NEGATIVE leg";
+        qDebug() << "✓✓✓ Click detected on NEGATIVE (SHORT) leg";
         return true;
     }
 
+    // LONG LEG (POSITIVE) - exact position X=282, Y=427
+    int longLegX = (int)(282 * scaleX);
+    int longLegY = (int)(427 * scaleY);
+
+    // Calculate distance from click to long leg tip
+    int distToLong = qSqrt(qPow(clickPos.x() - longLegX, 2) + qPow(clickPos.y() - longLegY, 2));
+
+    qDebug() << "Long leg center:" << QPoint(longLegX, longLegY) << "Distance:" << distToLong;
+
+    if (distToLong <= clickRadius) {
+        isPositive = true;
+        qDebug() << "✓✓✓ Click detected on POSITIVE (LONG) leg";
+        return true;
+    }
+
+    qDebug() << "✗ Click not on any leg (too far from both)";
     return false;
 }
 
