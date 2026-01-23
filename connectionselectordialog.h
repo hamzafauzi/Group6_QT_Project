@@ -10,8 +10,10 @@
 #include <QRadioButton>
 #include <QButtonGroup>
 
-// Forward declaration
+// Forward declarations
 class LEDComponent;
+class ResistorComponent;
+class ButtonComponent;
 
 class ConnectionSelectorDialog : public QDialog
 {
@@ -20,7 +22,9 @@ class ConnectionSelectorDialog : public QDialog
 public:
     enum ConnectionType {
         ARDUINO_PIN,
-        LED_LEG
+        LED_LEG,
+        RESISTOR_LEAD,
+        BUTTON_TERMINAL
     };
 
     explicit ConnectionSelectorDialog(QWidget *parent = nullptr);
@@ -29,15 +33,27 @@ public:
     int getSelectedPin() const;
     int getSelectedLEDId() const;
     bool isPositiveLeg() const;
+    int getSelectedResistorId() const;
+    bool isLeftLead() const;
+    int getSelectedButtonId() const;
+    int getSelectedTerminalNumber() const;
 
     void populateLEDList(const QList<LEDComponent*> &leds);
+    void populateResistorList(const QList<ResistorComponent*> &resistors);
+    void populateButtonList(const QList<ButtonComponent*> &buttons);
 
 private:
     QRadioButton *arduinoPinRadio;
     QRadioButton *ledLegRadio;
+    QRadioButton *resistorLeadRadio;
+    QRadioButton *buttonTerminalRadio;
     QComboBox *pinComboBox;
     QComboBox *ledComboBox;
     QComboBox *legTypeComboBox;
+    QComboBox *resistorComboBox;
+    QComboBox *leadTypeComboBox;
+    QComboBox *buttonComboBox;
+    QComboBox *terminalComboBox;
     QPushButton *okButton;
     QPushButton *cancelButton;
 

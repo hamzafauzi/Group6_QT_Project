@@ -44,7 +44,7 @@ MainWindow::~MainWindow()
 void MainWindow::setupUI()
 {
     setWindowTitle("Arduino Simulator - Qt6");
-    resize(1200, 800);
+    resize(1400, 900);  // Increased from 1200x800 to 1400x900
 
     QWidget *centralWidget = new QWidget(this);
     setCentralWidget(centralWidget);
@@ -151,6 +151,41 @@ void MainWindow::createControlPanel(QVBoxLayout *mainLayout)
         );
     connect(runButton, &QPushButton::clicked, this, &MainWindow::onRunClicked);
 
+    // Stop Button
+    stopButton = new QPushButton("⏹️ Stop");
+    stopButton->setMinimumSize(110, 45);
+    stopButton->setEnabled(false);  // Disabled initially
+    stopButton->setCursor(Qt::PointingHandCursor);
+    stopButton->setStyleSheet(
+        "QPushButton {"
+        "   background: qlineargradient(x1:0, y1:0, x2:0, y2:1,"
+        "                               stop:0 #EF5350, stop:1 #F44336);"
+        "   color: white;"
+        "   font-size: 13px;"
+        "   font-weight: bold;"
+        "   border: none;"
+        "   border-radius: 6px;"
+        "   padding: 8px 20px;"
+        "   box-shadow: 0 2px 4px rgba(0,0,0,0.2);"
+        "}"
+        "QPushButton:hover:enabled {"
+        "   background: qlineargradient(x1:0, y1:0, x2:0, y2:1,"
+        "                               stop:0 #E53935, stop:1 #D32F2F);"
+        "}"
+        "QPushButton:pressed:enabled {"
+        "   background: qlineargradient(x1:0, y1:0, x2:0, y2:1,"
+        "                               stop:0 #D32F2F, stop:1 #C62828);"
+        "   padding-top: 10px;"
+        "   padding-bottom: 6px;"
+        "}"
+        "QPushButton:disabled {"
+        "   background: #d0d0d0;"
+        "   color: #888888;"
+        "   box-shadow: none;"
+        "}"
+        );
+    connect(stopButton, &QPushButton::clicked, this, &MainWindow::onStopClicked);
+
     // Separator line
     QFrame *separator = new QFrame();
     separator->setFrameShape(QFrame::VLine);
@@ -231,6 +266,7 @@ void MainWindow::createControlPanel(QVBoxLayout *mainLayout)
     // Add widgets to layout
     controlLayout->addWidget(buildButton);
     controlLayout->addWidget(runButton);
+    controlLayout->addWidget(stopButton);
     controlLayout->addWidget(separator);
     controlLayout->addWidget(addComponentButton);
     controlLayout->addStretch();
@@ -275,9 +311,9 @@ void MainWindow::createMiddleSection(QVBoxLayout *mainLayout)
 
     splitter->addWidget(codeEditor);
     splitter->addWidget(simulatorPanel);
-    splitter->setStretchFactor(0, 1);
-    splitter->setStretchFactor(1, 1);
-    splitter->setSizes(QList<int>({500, 500}));
+    splitter->setStretchFactor(0, 1);  // Code editor
+    splitter->setStretchFactor(1, 2);  // Simulator panel (2x larger)
+    splitter->setSizes(QList<int>({300, 700}));  // Code: 300px, Simulator: 700px
 
     mainLayout->addWidget(splitter, 1);
 }
@@ -401,6 +437,33 @@ void MainWindow::onRunClicked()
 
     QString code = codeEditor->toPlainText();
     simulationEngine->start(code);
+
+    // Update button states
+    runButton->setEnabled(false);
+    stopButton->setEnabled(true);
+}
+
+void MainWindow::onStopClicked()
+{
+    logMessage(QString("=").repeated(60));
+    logMessage("⏹️ SIMULATION STOPPED");
+    logMessage(QString("=").repeated(60));
+
+    // Stop the simulation engine
+    if (simulationEngine) {
+        simulationEngine->stop();
+    }
+
+    // Reset all LEDs to OFF state
+    for (auto led : ledComponents) {
+        led->setState(false);
+    }
+
+    // Update button states
+    runButton->setEnabled(true);
+    stopButton->setEnabled(false);
+
+    logMessage("All components reset. Ready to run again.");
 }
 
 void MainWindow::onCompilationStarted()
@@ -433,6 +496,7 @@ void MainWindow::onCompilationFinished(bool success)
     buildButton->setEnabled(true);
     isCompilationSuccessful = success;
     runButton->setEnabled(success);
+    stopButton->setEnabled(false);  // Stop only enabled when running
 
     if (success) {
         logMessage(QString("=").repeated(60), true);
@@ -510,6 +574,8 @@ void MainWindow::testComponents()
 
     allComponents.append(testButton);
 
+    connect(testButton, &ButtonComponent::terminalClicked,
+            this, &MainWindow::onButtonTerminalClicked);
     connect(testButton, &Component::componentMoved,
             this, &MainWindow::onComponentMoved);
     connect(testButton, &Component::componentRightClicked,
@@ -551,24 +617,104 @@ void MainWindow::onLEDLegClicked(LEDComponent *led, bool isPositiveLeg)
 
     logMessage(QString("LED leg clicked: %1").arg(isPositiveLeg ? "Positive (+)" : "Negative (-)"));
 
-    // Open pin selector dialog
-    PinSelectorDialog dialog(this);
+    // Open connection selector dialog
+    ConnectionSelectorDialog dialog(this);
+
+    // Populate with ALL available components
+    dialog.populateLEDList(getAllLEDs());
+    dialog.populateResistorList(getAllResistors());
+    dialog.populateButtonList(getAllButtons());
 
     if (dialog.exec() == QDialog::Accepted) {
-        int selectedPin = dialog.getSelectedPin();
+        if (dialog.getConnectionType() == ConnectionSelectorDialog::ARDUINO_PIN) {
+            int selectedPin = dialog.getSelectedPin();
+            qDebug() << "Pin selected:" << selectedPin;
+            logMessage(QString("Selected Arduino Pin: %1").arg(selectedPin));
 
-        qDebug() << "Pin selected:" << selectedPin;
-        logMessage(QString("Selected Arduino Pin: %1").arg(selectedPin));
+            createWireConnection(led, isPositiveLeg, selectedPin);
 
-        // Create wire connection
-        createWireConnection(led, isPositiveLeg, selectedPin);
+            logMessage(QString("✓ Wire connected from LED %1 leg to Pin %2")
+                           .arg(isPositiveLeg ? "positive" : "negative")
+                           .arg(selectedPin));
+        }
+        else if (dialog.getConnectionType() == ConnectionSelectorDialog::LED_LEG) {
+            int ledId = dialog.getSelectedLEDId();
+            bool isPositiveTarget = dialog.isPositiveLeg();
 
-        logMessage(QString("Wire connected from LED %1 leg to Pin %2")
-                       .arg(isPositiveLeg ? "positive" : "negative")
-                       .arg(selectedPin));
+            // Find the target LED component
+            LEDComponent *targetLED = nullptr;
+            for (Component *comp : allComponents) {
+                LEDComponent *l = qobject_cast<LEDComponent*>(comp);
+                if (l && l->componentId() == ledId) {
+                    targetLED = l;
+                    break;
+                }
+            }
+
+            if (targetLED && targetLED != led) {
+                logMessage(QString("✓ Wire connected from LED %1 leg to another LED %2 leg")
+                               .arg(isPositiveLeg ? "positive" : "negative")
+                               .arg(isPositiveTarget ? "positive" : "negative"));
+                // TODO: Create LED-to-LED wire
+            } else if (targetLED == led) {
+                logMessage("ERROR: Cannot connect LED to itself!");
+            } else {
+                logMessage("ERROR: Selected LED not found!");
+            }
+        }
+        else if (dialog.getConnectionType() == ConnectionSelectorDialog::RESISTOR_LEAD) {
+            int resistorId = dialog.getSelectedResistorId();
+            bool isLeft = dialog.isLeftLead();
+
+            // Find the resistor component
+            ResistorComponent *targetResistor = nullptr;
+            for (Component *comp : allComponents) {
+                ResistorComponent *r = qobject_cast<ResistorComponent*>(comp);
+                if (r && r->componentId() == resistorId) {
+                    targetResistor = r;
+                    break;
+                }
+            }
+
+            if (targetResistor) {
+                // Create LED-to-Resistor wire (reverse of resistor-to-LED)
+                createResistorToLEDWire(targetResistor, isLeft, led, isPositiveLeg);
+
+                logMessage(QString("✓ Wire connected from LED %1 leg to Resistor %2 lead")
+                               .arg(isPositiveLeg ? "positive" : "negative")
+                               .arg(isLeft ? "left" : "right"));
+            } else {
+                logMessage("ERROR: Selected Resistor not found!");
+            }
+        }
+        else if (dialog.getConnectionType() == ConnectionSelectorDialog::BUTTON_TERMINAL) {
+            int buttonId = dialog.getSelectedButtonId();
+            int termNum = dialog.getSelectedTerminalNumber();
+
+            // Find the button component
+            ButtonComponent *targetButton = nullptr;
+            for (Component *comp : allComponents) {
+                ButtonComponent *b = qobject_cast<ButtonComponent*>(comp);
+                if (b && b->componentId() == buttonId) {
+                    targetButton = b;
+                    break;
+                }
+            }
+
+            if (targetButton) {
+                // Create LED-to-Button wire (reverse of button-to-LED)
+                createButtonToLEDWire(targetButton, termNum, led, isPositiveLeg);
+
+                logMessage(QString("✓ Wire connected from LED %1 leg to Button terminal %2")
+                               .arg(isPositiveLeg ? "positive" : "negative")
+                               .arg(termNum));
+            } else {
+                logMessage("ERROR: Selected Button not found!");
+            }
+        }
     } else {
-        qDebug() << "Pin selection canceled";
-        logMessage("Pin selection canceled");
+        qDebug() << "Connection selection canceled";
+        logMessage("Connection selection canceled");
     }
 
     qDebug() << "=== onLEDLegClicked finished ===";
@@ -584,8 +730,10 @@ void MainWindow::onResistorLeadClicked(ResistorComponent *resistor, bool isLeftL
     // Open connection selector dialog
     ConnectionSelectorDialog dialog(this);
 
-    // Populate with available LEDs
+    // Populate with ALL available components
     dialog.populateLEDList(getAllLEDs());
+    dialog.populateResistorList(getAllResistors());
+    dialog.populateButtonList(getAllButtons());
 
     if (dialog.exec() == QDialog::Accepted) {
         if (dialog.getConnectionType() == ConnectionSelectorDialog::ARDUINO_PIN) {
@@ -599,7 +747,8 @@ void MainWindow::onResistorLeadClicked(ResistorComponent *resistor, bool isLeftL
             logMessage(QString("✓ Wire connected from Resistor %1 lead to Pin %2")
                            .arg(isLeftLead ? "left" : "right")
                            .arg(selectedPin));
-        } else {
+        }
+        else if (dialog.getConnectionType() == ConnectionSelectorDialog::LED_LEG) {
             // LED leg selected
             int ledId = dialog.getSelectedLEDId();
             bool isPositive = dialog.isPositiveLeg();
@@ -617,12 +766,61 @@ void MainWindow::onResistorLeadClicked(ResistorComponent *resistor, bool isLeftL
                 // Create wire connection for resistor to LED leg
                 createResistorToLEDWire(resistor, isLeftLead, targetLED, isPositive);
 
-                logMessage(QString("✓ Wire connected from Resistor %1 lead to LED (Pin %2) %3 leg")
+                logMessage(QString("✓ Wire connected from Resistor %1 lead to LED %2 leg")
                                .arg(isLeftLead ? "left" : "right")
-                               .arg(targetLED->getPin())
                                .arg(isPositive ? "positive" : "negative"));
             } else {
                 logMessage("ERROR: Selected LED not found!");
+            }
+        }
+        else if (dialog.getConnectionType() == ConnectionSelectorDialog::RESISTOR_LEAD) {
+            int resistorId = dialog.getSelectedResistorId();
+            bool isLeft = dialog.isLeftLead();
+
+            // Find the resistor component
+            ResistorComponent *targetResistor = nullptr;
+            for (Component *comp : allComponents) {
+                ResistorComponent *r = qobject_cast<ResistorComponent*>(comp);
+                if (r && r->componentId() == resistorId) {
+                    targetResistor = r;
+                    break;
+                }
+            }
+
+            if (targetResistor && targetResistor != resistor) {
+                logMessage(QString("✓ Wire connected from Resistor %1 lead to another Resistor %2 lead")
+                               .arg(isLeftLead ? "left" : "right")
+                               .arg(isLeft ? "left" : "right"));
+                // TODO: Create Resistor-to-Resistor wire
+            } else if (targetResistor == resistor) {
+                logMessage("ERROR: Cannot connect Resistor to itself!");
+            } else {
+                logMessage("ERROR: Selected Resistor not found!");
+            }
+        }
+        else if (dialog.getConnectionType() == ConnectionSelectorDialog::BUTTON_TERMINAL) {
+            int buttonId = dialog.getSelectedButtonId();
+            int termNum = dialog.getSelectedTerminalNumber();
+
+            // Find the button component
+            ButtonComponent *targetButton = nullptr;
+            for (Component *comp : allComponents) {
+                ButtonComponent *b = qobject_cast<ButtonComponent*>(comp);
+                if (b && b->componentId() == buttonId) {
+                    targetButton = b;
+                    break;
+                }
+            }
+
+            if (targetButton) {
+                // Create wire connection for resistor to button
+                createResistorToButtonWire(resistor, isLeftLead, targetButton, termNum);
+
+                logMessage(QString("✓ Wire connected from Resistor %1 lead to Button terminal %2")
+                               .arg(isLeftLead ? "left" : "right")
+                               .arg(termNum));
+            } else {
+                logMessage("ERROR: Selected Button not found!");
             }
         }
     } else {
@@ -631,6 +829,117 @@ void MainWindow::onResistorLeadClicked(ResistorComponent *resistor, bool isLeftL
     }
 
     qDebug() << "=== onResistorLeadClicked finished ===";
+}
+
+void MainWindow::onButtonTerminalClicked(ButtonComponent *button, int terminalNumber)
+{
+    qDebug() << "=== onButtonTerminalClicked called ===";
+    qDebug() << "Button:" << button << "Terminal:" << terminalNumber;
+
+    logMessage(QString("Button terminal %1 clicked").arg(terminalNumber));
+
+    // Open connection selector dialog
+    ConnectionSelectorDialog dialog(this);
+
+    // Populate with ALL available components
+    dialog.populateLEDList(getAllLEDs());
+    dialog.populateResistorList(getAllResistors());
+    dialog.populateButtonList(getAllButtons());
+
+    if (dialog.exec() == QDialog::Accepted) {
+        if (dialog.getConnectionType() == ConnectionSelectorDialog::ARDUINO_PIN) {
+            int selectedPin = dialog.getSelectedPin();
+            qDebug() << "Pin selected:" << selectedPin;
+            logMessage(QString("Selected Arduino Pin: %1").arg(selectedPin));
+
+            // Create wire connection for button to Arduino pin
+            createButtonToArduinoWire(button, terminalNumber, selectedPin);
+
+            logMessage(QString("✓ Wire connected from Button terminal %1 to Pin %2")
+                           .arg(terminalNumber)
+                           .arg(selectedPin));
+        }
+        else if (dialog.getConnectionType() == ConnectionSelectorDialog::LED_LEG) {
+            // LED leg selected
+            int ledId = dialog.getSelectedLEDId();
+            bool isPositive = dialog.isPositiveLeg();
+
+            // Find the LED component
+            LEDComponent *targetLED = nullptr;
+            for (auto led : ledComponents) {
+                if (led->componentId() == ledId) {
+                    targetLED = led;
+                    break;
+                }
+            }
+
+            if (targetLED) {
+                // Create wire connection for button to LED leg
+                createButtonToLEDWire(button, terminalNumber, targetLED, isPositive);
+
+                logMessage(QString("✓ Wire connected from Button terminal %1 to LED %2 leg")
+                               .arg(terminalNumber)
+                               .arg(isPositive ? "positive" : "negative"));
+            } else {
+                logMessage("ERROR: Selected LED not found!");
+            }
+        }
+        else if (dialog.getConnectionType() == ConnectionSelectorDialog::RESISTOR_LEAD) {
+            int resistorId = dialog.getSelectedResistorId();
+            bool isLeft = dialog.isLeftLead();
+
+            // Find the resistor component
+            ResistorComponent *targetResistor = nullptr;
+            for (Component *comp : allComponents) {
+                ResistorComponent *r = qobject_cast<ResistorComponent*>(comp);
+                if (r && r->componentId() == resistorId) {
+                    targetResistor = r;
+                    break;
+                }
+            }
+
+            if (targetResistor) {
+                // Create wire connection for button to resistor
+                createButtonToResistorWire(button, terminalNumber, targetResistor, isLeft);
+
+                logMessage(QString("✓ Wire connected from Button terminal %1 to Resistor %2 lead")
+                               .arg(terminalNumber)
+                               .arg(isLeft ? "left" : "right"));
+            } else {
+                logMessage("ERROR: Selected Resistor not found!");
+            }
+        }
+        else if (dialog.getConnectionType() == ConnectionSelectorDialog::BUTTON_TERMINAL) {
+            int buttonId = dialog.getSelectedButtonId();
+            int termNum = dialog.getSelectedTerminalNumber();
+
+            // Find the button component
+            ButtonComponent *targetButton = nullptr;
+            for (Component *comp : allComponents) {
+                ButtonComponent *b = qobject_cast<ButtonComponent*>(comp);
+                if (b && b->componentId() == buttonId) {
+                    targetButton = b;
+                    break;
+                }
+            }
+
+            if (targetButton && targetButton != button) {
+                logMessage(QString("✓ Wire connected from Button terminal %1 to another Button terminal %2")
+                               .arg(terminalNumber)
+                               .arg(termNum));
+                // TODO: Create Button-to-Button wire
+            } else if (targetButton == button) {
+                logMessage("ERROR: Cannot connect Button to itself!");
+            } else {
+                logMessage("ERROR: Selected Button not found!");
+            }
+        }
+    } else {
+        qDebug() << "Connection selection canceled";
+        logMessage("Connection selection canceled");
+    }
+
+    qDebug() << "=== onButtonTerminalClicked finished ===";
 }
 
 void MainWindow::createWireConnection(LEDComponent *led, bool isPositiveLeg, int arduinoPin)
@@ -771,6 +1080,197 @@ void MainWindow::createResistorToLEDWire(ResistorComponent *resistor, bool isLef
     qDebug() << "Resistor-to-LED wire stored. Total wires:" << wireConnections.size();
 }
 
+void MainWindow::createButtonToArduinoWire(ButtonComponent *button, int terminalNumber, int arduinoPin)
+{
+    qDebug() << "=== createButtonToArduinoWire called ===";
+
+    // Create new wire widget
+    Wire *wire = new Wire(simulatorPanel);
+
+    // Get button terminal position
+    QPoint buttonTerminalPos;
+    switch (terminalNumber) {
+    case 1: buttonTerminalPos = button->getTerminal1Pos(); break;
+    case 2: buttonTerminalPos = button->getTerminal2Pos(); break;
+    case 3: buttonTerminalPos = button->getTerminal3Pos(); break;
+    case 4: buttonTerminalPos = button->getTerminal4Pos(); break;
+    }
+    qDebug() << "Button terminal" << terminalNumber << "position:" << buttonTerminalPos;
+
+    // Get Arduino pin position
+    QPoint arduinoPinPos = simulatorPanel->getPinPosition(arduinoPin);
+    qDebug() << "Arduino pin position:" << arduinoPinPos;
+
+    // Set wire endpoints
+    wire->setStartPoint(buttonTerminalPos);
+    wire->setEndPoint(arduinoPinPos);
+
+    // Set wire color (cyan for buttons)
+    wire->setColor(Qt::cyan);
+    wire->setThickness(3);
+    wire->show();
+    wire->raise();
+
+    // Store wire connection
+    WireConnection connection;
+    connection.wire = wire;
+
+    connection.startPoint.type = BUTTON_TERMINAL;
+    connection.startPoint.button = button;
+    connection.startPoint.terminalNumber = terminalNumber;
+
+    connection.endPoint.type = ARDUINO_PIN;
+    connection.endPoint.arduinoPin = arduinoPin;
+
+    wireConnections.append(connection);
+
+    qDebug() << "Button wire stored. Total wires:" << wireConnections.size();
+}
+
+void MainWindow::createButtonToLEDWire(ButtonComponent *button, int terminalNumber, LEDComponent *led, bool isPositiveLeg)
+{
+    qDebug() << "=== createButtonToLEDWire called ===";
+
+    // Create new wire widget
+    Wire *wire = new Wire(simulatorPanel);
+
+    // Get button terminal position
+    QPoint buttonTerminalPos;
+    switch (terminalNumber) {
+    case 1: buttonTerminalPos = button->getTerminal1Pos(); break;
+    case 2: buttonTerminalPos = button->getTerminal2Pos(); break;
+    case 3: buttonTerminalPos = button->getTerminal3Pos(); break;
+    case 4: buttonTerminalPos = button->getTerminal4Pos(); break;
+    }
+    qDebug() << "Button terminal" << terminalNumber << "position:" << buttonTerminalPos;
+
+    // Get LED leg position
+    QPoint ledLegPos = isPositiveLeg ? led->getPositiveLegPos() : led->getNegativeLegPos();
+    qDebug() << "LED leg position:" << ledLegPos;
+
+    // Set wire endpoints
+    wire->setStartPoint(buttonTerminalPos);
+    wire->setEndPoint(ledLegPos);
+
+    // Set wire color (magenta for button-to-LED)
+    wire->setColor(Qt::magenta);
+    wire->setThickness(3);
+    wire->show();
+    wire->raise();
+
+    // Store wire connection
+    WireConnection connection;
+    connection.wire = wire;
+
+    connection.startPoint.type = BUTTON_TERMINAL;
+    connection.startPoint.button = button;
+    connection.startPoint.terminalNumber = terminalNumber;
+
+    connection.endPoint.type = LED_LEG;
+    connection.endPoint.led = led;
+    connection.endPoint.isPositiveLeg = isPositiveLeg;
+
+    wireConnections.append(connection);
+
+    qDebug() << "Button-to-LED wire stored. Total wires:" << wireConnections.size();
+}
+
+void MainWindow::createResistorToButtonWire(ResistorComponent *resistor, bool isLeftLead, ButtonComponent *button, int terminalNumber)
+{
+    qDebug() << "=== createResistorToButtonWire called ===";
+
+    // Create new wire widget
+    Wire *wire = new Wire(simulatorPanel);
+
+    // Get resistor lead position
+    QPoint resistorLeadPos = isLeftLead ? resistor->getLeftLeadPos() : resistor->getRightLeadPos();
+    qDebug() << "Resistor lead position:" << resistorLeadPos;
+
+    // Get button terminal position
+    QPoint buttonTerminalPos;
+    switch (terminalNumber) {
+    case 1: buttonTerminalPos = button->getTerminal1Pos(); break;
+    case 2: buttonTerminalPos = button->getTerminal2Pos(); break;
+    case 3: buttonTerminalPos = button->getTerminal3Pos(); break;
+    case 4: buttonTerminalPos = button->getTerminal4Pos(); break;
+    }
+    qDebug() << "Button terminal" << terminalNumber << "position:" << buttonTerminalPos;
+
+    // Set wire endpoints
+    wire->setStartPoint(resistorLeadPos);
+    wire->setEndPoint(buttonTerminalPos);
+
+    // Set wire color (orange for resistor-to-button)
+    wire->setColor(QColor(255, 165, 0)); // Orange
+    wire->setThickness(3);
+    wire->show();
+    wire->raise();
+
+    // Store wire connection
+    WireConnection connection;
+    connection.wire = wire;
+
+    connection.startPoint.type = RESISTOR_LEAD;
+    connection.startPoint.resistor = resistor;
+    connection.startPoint.isLeftLead = isLeftLead;
+
+    connection.endPoint.type = BUTTON_TERMINAL;
+    connection.endPoint.button = button;
+    connection.endPoint.terminalNumber = terminalNumber;
+
+    wireConnections.append(connection);
+
+    qDebug() << "Resistor-to-Button wire stored. Total wires:" << wireConnections.size();
+}
+
+void MainWindow::createButtonToResistorWire(ButtonComponent *button, int terminalNumber, ResistorComponent *resistor, bool isLeftLead)
+{
+    qDebug() << "=== createButtonToResistorWire called ===";
+
+    // Create new wire widget
+    Wire *wire = new Wire(simulatorPanel);
+
+    // Get button terminal position
+    QPoint buttonTerminalPos;
+    switch (terminalNumber) {
+    case 1: buttonTerminalPos = button->getTerminal1Pos(); break;
+    case 2: buttonTerminalPos = button->getTerminal2Pos(); break;
+    case 3: buttonTerminalPos = button->getTerminal3Pos(); break;
+    case 4: buttonTerminalPos = button->getTerminal4Pos(); break;
+    }
+    qDebug() << "Button terminal" << terminalNumber << "position:" << buttonTerminalPos;
+
+    // Get resistor lead position
+    QPoint resistorLeadPos = isLeftLead ? resistor->getLeftLeadPos() : resistor->getRightLeadPos();
+    qDebug() << "Resistor lead position:" << resistorLeadPos;
+
+    // Set wire endpoints
+    wire->setStartPoint(buttonTerminalPos);
+    wire->setEndPoint(resistorLeadPos);
+
+    // Set wire color (orange for button-to-resistor)
+    wire->setColor(QColor(255, 165, 0)); // Orange
+    wire->setThickness(3);
+    wire->show();
+    wire->raise();
+
+    // Store wire connection
+    WireConnection connection;
+    connection.wire = wire;
+
+    connection.startPoint.type = BUTTON_TERMINAL;
+    connection.startPoint.button = button;
+    connection.startPoint.terminalNumber = terminalNumber;
+
+    connection.endPoint.type = RESISTOR_LEAD;
+    connection.endPoint.resistor = resistor;
+    connection.endPoint.isLeftLead = isLeftLead;
+
+    wireConnections.append(connection);
+
+    qDebug() << "Button-to-Resistor wire stored. Total wires:" << wireConnections.size();
+}
+
 QPoint MainWindow::getConnectionPoint(const ConnectionEndpoint &endpoint)
 {
     switch (endpoint.type) {
@@ -792,6 +1292,17 @@ QPoint MainWindow::getConnectionPoint(const ConnectionEndpoint &endpoint)
                        endpoint.resistor->getRightLeadPos();
         }
         break;
+
+    case BUTTON_TERMINAL:
+        if (endpoint.button) {
+            switch (endpoint.terminalNumber) {
+            case 1: return endpoint.button->getTerminal1Pos();
+            case 2: return endpoint.button->getTerminal2Pos();
+            case 3: return endpoint.button->getTerminal3Pos();
+            case 4: return endpoint.button->getTerminal4Pos();
+            }
+        }
+        break;
     }
 
     return QPoint(0, 0);
@@ -808,6 +1319,7 @@ void MainWindow::updateWiresForComponent(Component *component)
 {
     LEDComponent *led = qobject_cast<LEDComponent*>(component);
     ResistorComponent *resistor = qobject_cast<ResistorComponent*>(component);
+    ButtonComponent *button = qobject_cast<ButtonComponent*>(component);
 
     for (WireConnection &conn : wireConnections) {
         bool needsUpdate = false;
@@ -823,6 +1335,11 @@ void MainWindow::updateWiresForComponent(Component *component)
             conn.wire->setStartPoint(newPos);
             needsUpdate = true;
         }
+        else if (conn.startPoint.type == BUTTON_TERMINAL && conn.startPoint.button == button) {
+            QPoint newPos = getConnectionPoint(conn.startPoint);
+            conn.wire->setStartPoint(newPos);
+            needsUpdate = true;
+        }
 
         if (conn.endPoint.type == LED_LEG && conn.endPoint.led == led) {
             QPoint newPos = getConnectionPoint(conn.endPoint);
@@ -830,6 +1347,11 @@ void MainWindow::updateWiresForComponent(Component *component)
             needsUpdate = true;
         }
         else if (conn.endPoint.type == RESISTOR_LEAD && conn.endPoint.resistor == resistor) {
+            QPoint newPos = getConnectionPoint(conn.endPoint);
+            conn.wire->setEndPoint(newPos);
+            needsUpdate = true;
+        }
+        else if (conn.endPoint.type == BUTTON_TERMINAL && conn.endPoint.button == button) {
             QPoint newPos = getConnectionPoint(conn.endPoint);
             conn.wire->setEndPoint(newPos);
             needsUpdate = true;
@@ -893,6 +1415,7 @@ void MainWindow::onAddButton()
 
     allComponents.append(button);
 
+    connect(button, &ButtonComponent::terminalClicked, this, &MainWindow::onButtonTerminalClicked);
     connect(button, &Component::componentMoved, this, &MainWindow::onComponentMoved);
     connect(button, &Component::componentRightClicked, this, &MainWindow::onComponentRightClicked);
 
@@ -952,6 +1475,7 @@ void MainWindow::deleteWiresForComponent(Component *component)
 
     LEDComponent *led = qobject_cast<LEDComponent*>(component);
     ResistorComponent *resistor = qobject_cast<ResistorComponent*>(component);
+    ButtonComponent *button = qobject_cast<ButtonComponent*>(component);
 
     for (int i = wireConnections.size() - 1; i >= 0; --i) {
         bool shouldDelete = false;
@@ -966,6 +1490,12 @@ void MainWindow::deleteWiresForComponent(Component *component)
         else if (resistor) {
             if ((wireConnections[i].startPoint.type == RESISTOR_LEAD && wireConnections[i].startPoint.resistor == resistor) ||
                 (wireConnections[i].endPoint.type == RESISTOR_LEAD && wireConnections[i].endPoint.resistor == resistor)) {
+                shouldDelete = true;
+            }
+        }
+        else if (button) {
+            if ((wireConnections[i].startPoint.type == BUTTON_TERMINAL && wireConnections[i].startPoint.button == button) ||
+                (wireConnections[i].endPoint.type == BUTTON_TERMINAL && wireConnections[i].endPoint.button == button)) {
                 shouldDelete = true;
             }
         }
@@ -994,4 +1524,32 @@ QList<LEDComponent*> MainWindow::getAllLEDs() const
     }
 
     return leds;
+}
+
+QList<ResistorComponent*> MainWindow::getAllResistors() const
+{
+    QList<ResistorComponent*> resistors;
+
+    for (Component *component : allComponents) {
+        ResistorComponent *resistor = qobject_cast<ResistorComponent*>(component);
+        if (resistor) {
+            resistors.append(resistor);
+        }
+    }
+
+    return resistors;
+}
+
+QList<ButtonComponent*> MainWindow::getAllButtons() const
+{
+    QList<ButtonComponent*> buttons;
+
+    for (Component *component : allComponents) {
+        ButtonComponent *button = qobject_cast<ButtonComponent*>(component);
+        if (button) {
+            buttons.append(button);
+        }
+    }
+
+    return buttons;
 }

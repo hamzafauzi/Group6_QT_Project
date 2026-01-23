@@ -33,6 +33,7 @@ public:
 private slots:
     void onBuildClicked();
     void onRunClicked();
+    void onStopClicked();
 
     // Compiler slots
     void onCompilationStarted();
@@ -47,6 +48,7 @@ private slots:
     // Component interaction slots
     void onLEDLegClicked(LEDComponent *led, bool isPositiveLeg);
     void onResistorLeadClicked(ResistorComponent *resistor, bool isLeftLead);
+    void onButtonTerminalClicked(ButtonComponent *button, int terminalNumber);
     void onComponentMoved(Component *component);
     void onComponentRightClicked(Component *component);
 
@@ -60,6 +62,7 @@ private:
     // UI Components
     QPushButton *buildButton;
     QPushButton *runButton;
+    QPushButton *stopButton;
     QPushButton *addComponentButton;
     QTextEdit *codeEditor;
     SimulatorPanel *simulatorPanel;
@@ -83,7 +86,8 @@ private:
     enum ConnectionEndpointType {
         ARDUINO_PIN,
         LED_LEG,
-        RESISTOR_LEAD
+        RESISTOR_LEAD,
+        BUTTON_TERMINAL
     };
 
     struct ConnectionEndpoint {
@@ -91,12 +95,14 @@ private:
         int arduinoPin;              // For ARDUINO_PIN
         LEDComponent *led;           // For LED_LEG
         ResistorComponent *resistor; // For RESISTOR_LEAD
+        ButtonComponent *button;     // For BUTTON_TERMINAL
         bool isPositiveLeg;          // For LED_LEG (true = positive, false = negative)
         bool isLeftLead;             // For RESISTOR_LEAD (true = left, false = right)
+        int terminalNumber;          // For BUTTON_TERMINAL (1-4)
 
         ConnectionEndpoint()
             : type(ARDUINO_PIN), arduinoPin(-1), led(nullptr), resistor(nullptr),
-            isPositiveLeg(false), isLeftLead(false) {}
+            button(nullptr), isPositiveLeg(false), isLeftLead(false), terminalNumber(0) {}
     };
 
     struct WireConnection {
@@ -116,11 +122,17 @@ private:
     void createWireConnection(LEDComponent *led, bool isPositiveLeg, int arduinoPin);
     void createResistorToArduinoWire(ResistorComponent *resistor, bool isLeftLead, int arduinoPin);
     void createResistorToLEDWire(ResistorComponent *resistor, bool isLeftLead, LEDComponent *led, bool isPositiveLeg);
+    void createResistorToButtonWire(ResistorComponent *resistor, bool isLeftLead, ButtonComponent *button, int terminalNumber);
+    void createButtonToArduinoWire(ButtonComponent *button, int terminalNumber, int arduinoPin);
+    void createButtonToLEDWire(ButtonComponent *button, int terminalNumber, LEDComponent *led, bool isPositiveLeg);
+    void createButtonToResistorWire(ButtonComponent *button, int terminalNumber, ResistorComponent *resistor, bool isLeftLead);
     void deleteWiresForComponent(Component *component);
     void updateWiresForComponent(Component *component);
     QPoint getConnectionPoint(const ConnectionEndpoint &endpoint);
 
     QList<LEDComponent*> getAllLEDs() const;
+    QList<ResistorComponent*> getAllResistors() const;
+    QList<ButtonComponent*> getAllButtons() const;
 
     // Component ID counter
     int nextComponentId;

@@ -2,6 +2,8 @@
 #include <QPainter>
 #include <QFile>
 #include <QDebug>
+#include <QTimer>
+#include <QtMath>
 
 ButtonComponent::ButtonComponent(QWidget *parent)
     : Component(parent)
@@ -116,20 +118,176 @@ void ButtonComponent::mousePressEvent(QMouseEvent *event)
         return;
     }
 
-    // Handle left-click for button press
+    // Handle left-click
     if (event->button() == Qt::LeftButton) {
-        setPressed(true);
+        QPoint clickPos = event->pos();
+
+        // Check if click is on a terminal (highest priority)
+        int terminalNumber = 0;
+        if (isClickOnTerminal(clickPos, terminalNumber)) {
+            qDebug() << "Click on terminal" << terminalNumber;
+            emit terminalClicked(this, terminalNumber);
+            event->accept();
+            return;
+        }
+
+        // Check if click is on the green circular button (pressable area)
+        if (isClickOnCircle(clickPos)) {
+            qDebug() << "Click on green button - activating";
+
+            // Toggle button state
+            setPressed(!m_isPressed);
+
+            event->accept();
+            return;
+        }
+
+        // Otherwise, it's a drag operation
+        qDebug() << "Click on box edge - dragging";
+        m_dragStartPosition = event->pos();
+        m_isDragging = false;
     }
 
     Component::mousePressEvent(event);
 }
 
+bool ButtonComponent::isClickOnCircle(const QPoint &clickPos)
+{
+    // Button image is 137x122
+    // Green circle top-left: (40, 36), size: 57x51
+    // Center: (68.5, 61.5), Radius X: 28.5, Radius Y: 25.5
+
+    double scaleX = (double)width() / 137.0;
+    double scaleY = (double)height() / 122.0;
+
+    // Green circle center in scaled coordinates
+    double centerX = 68.5 * scaleX;
+    double centerY = 61.5 * scaleY;
+
+    // Radii in scaled coordinates
+    double radiusX = 28.5 * scaleX;
+    double radiusY = 25.5 * scaleY;
+
+    // Calculate if click is inside the ellipse
+    double dx = (clickPos.x() - centerX) / radiusX;
+    double dy = (clickPos.y() - centerY) / radiusY;
+
+    double distance = dx * dx + dy * dy;
+
+    bool isInside = (distance <= 1.0);
+
+    qDebug() << "Click at:" << clickPos
+             << "Center:" << QPointF(centerX, centerY)
+             << "Distance:" << distance
+             << "Inside:" << isInside;
+
+    return isInside;
+}
+
+void ButtonComponent::mouseMoveEvent(QMouseEvent *event)
+{
+    // If mouse moved significantly, it's a drag
+    if (event->buttons() & Qt::LeftButton) {
+        QPoint delta = event->pos() - m_dragStartPosition;
+        if (delta.manhattanLength() > 3) {  // 3 pixel threshold
+            m_isDragging = true;
+        }
+    }
+
+    Component::mouseMoveEvent(event);
+}
+
 void ButtonComponent::mouseReleaseEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton) {
-        setPressed(false);
+        m_isDragging = false;
     }
     Component::mouseReleaseEvent(event);
+}
+
+QPoint ButtonComponent::getTerminal1Pos() const
+{
+    // Terminal 1 (top-left): X=10, Y=43 in 137x122 image
+    double scaleX = (double)width() / 137.0;
+    double scaleY = (double)height() / 122.0;
+
+    int termX = (int)(10 * scaleX);
+    int termY = (int)(43 * scaleY);
+
+    return mapToParent(QPoint(termX, termY));
+}
+
+QPoint ButtonComponent::getTerminal2Pos() const
+{
+    // Terminal 2 (bottom-left): X=10, Y=78 in 137x122 image
+    double scaleX = (double)width() / 137.0;
+    double scaleY = (double)height() / 122.0;
+
+    int termX = (int)(10 * scaleX);
+    int termY = (int)(78 * scaleY);
+
+    return mapToParent(QPoint(termX, termY));
+}
+
+QPoint ButtonComponent::getTerminal3Pos() const
+{
+    // Terminal 3 (top-right): X=128, Y=42 in 137x122 image
+    double scaleX = (double)width() / 137.0;
+    double scaleY = (double)height() / 122.0;
+
+    int termX = (int)(128 * scaleX);
+    int termY = (int)(42 * scaleY);
+
+    return mapToParent(QPoint(termX, termY));
+}
+
+QPoint ButtonComponent::getTerminal4Pos() const
+{
+    // Terminal 4 (bottom-right): X=128, Y=78 in 137x122 image
+    double scaleX = (double)width() / 137.0;
+    double scaleY = (double)height() / 122.0;
+
+    int termX = (int)(128 * scaleX);
+    int termY = (int)(78 * scaleY);
+
+    return mapToParent(QPoint(termX, termY));
+}
+
+bool ButtonComponent::isClickOnTerminal(const QPoint &clickPos, int &terminalNumber)
+{
+    double scaleX = (double)width() / 137.0;
+    double scaleY = (double)height() / 122.0;
+
+    const int clickRadius = 15;  // 15 pixel radius around each terminal
+
+    // Terminal positions in 137x122 image
+    struct Terminal {
+        int x, y, number;
+    };
+
+    Terminal terminals[] = {
+        {10, 43, 1},   // Terminal 1 (top-left)
+        {10, 78, 2},   // Terminal 2 (bottom-left)
+        {128, 42, 3},  // Terminal 3 (top-right)
+        {128, 78, 4}   // Terminal 4 (bottom-right)
+    };
+
+    // Check each terminal
+    for (const Terminal &term : terminals) {
+        int termX = (int)(term.x * scaleX);
+        int termY = (int)(term.y * scaleY);
+
+        int dist = qSqrt(qPow(clickPos.x() - termX, 2) + qPow(clickPos.y() - termY, 2));
+
+        if (dist <= clickRadius) {
+            terminalNumber = term.number;
+            qDebug() << "Terminal" << terminalNumber << "clicked at" << clickPos
+                     << "terminal pos:" << QPoint(termX, termY) << "distance:" << dist;
+            return true;
+        }
+    }
+
+    return false;
 }
 
 void ButtonComponent::paintEvent(QPaintEvent *event)
