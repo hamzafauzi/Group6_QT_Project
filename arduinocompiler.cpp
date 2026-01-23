@@ -19,9 +19,13 @@ ArduinoCompiler::~ArduinoCompiler()
 QString ArduinoCompiler::findArduinoCLI()
 {
     QStringList possiblePaths;
+
+    // 👇 YOUR PATH (added on top, nothing else changed)
+    possiblePaths << "C:/Users/ibaha/arduino-cli_1.4.1_Windows_64bit/arduino-cli.exe";// this is safa's path
+    // Vincent add your path here just like on top.
     possiblePaths << "C:/arduino-cli/arduino-cli.exe";  // Preferred (no spaces)
     possiblePaths << "C:/Program Files/Arduino CLI/arduino-cli.exe";
-    possiblePaths << QDir::homePath() + "/scoop/shims/arduino-cli.exe";
+    possiblePaths << QDir::homePath() + "C:/Usersibaha\arduino-cli_1.4.1_Windows_64bit";
     possiblePaths << QDir::homePath() + "/AppData/Local/Programs/Arduino CLI/arduino-cli.exe";
     possiblePaths << "arduino-cli.exe";
 
@@ -45,6 +49,7 @@ QString ArduinoCompiler::findArduinoCLI()
     qDebug() << "Arduino CLI not found";
     return QString();
 }
+
 
 bool ArduinoCompiler::isArduinoCLIInstalled()
 {
