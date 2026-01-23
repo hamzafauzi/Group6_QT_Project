@@ -20,14 +20,19 @@ QString ArduinoCompiler::findArduinoCLI()
 {
     QStringList possiblePaths;
 
-    // 👇 YOUR PATH (added on top, nothing else changed)
-    possiblePaths << "C:/Users/ibaha/arduino-cli_1.4.1_Windows_64bit/arduino-cli.exe";// this is safa's path
-    // Vincent add your path here just like on top.
-    possiblePaths << "C:/arduino-cli/arduino-cli.exe";  // Preferred (no spaces)
+    // ===== Team-specific overrides (add yours on top) =====
+    possiblePaths << "C:/Users/ibaha/arduino-cli_1.4.1_Windows_64bit/arduino-cli.exe"; // Safa
+    // possiblePaths << "C:/Users/Vincent/arduino-cli/arduino-cli.exe";               // Vincent add here (example)
+
+    // ===== Common install locations =====
+    possiblePaths << "C:/arduino-cli/arduino-cli.exe";              // Portable install
     possiblePaths << "C:/Program Files/Arduino CLI/arduino-cli.exe";
-    possiblePaths << QDir::homePath() + "C:/Usersibaha\arduino-cli_1.4.1_Windows_64bit";
+    possiblePaths << QDir::homePath() + "/scoop/shims/arduino-cli.exe";
     possiblePaths << QDir::homePath() + "/AppData/Local/Programs/Arduino CLI/arduino-cli.exe";
+
+    // ===== PATH fallback =====
     possiblePaths << "arduino-cli.exe";
+
 
     for (const QString &path : possiblePaths) {
         QFile file(path);
