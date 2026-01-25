@@ -45,6 +45,15 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(ArduinoSimulator
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
+        startwindow.h startwindow.cpp startwindow.ui
+
+        componentitem.h componentitem.cpp
+        arduinoitem.h arduinoitem.cpp
+        simulatorscene.h simulatorscene.cpp
+        pinitem.h pinitem.cpp
+        leditem.h leditem.cpp
+        cableitem.h cableitem.cpp
+
     )
 else()
     if(ANDROID)
