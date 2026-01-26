@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>800</width>
-    <height>600</height>
+    <width>767</width>
+    <height>355</height>
    </rect>
   </property>
   <property name="palette">
@@ -120,14 +120,14 @@
    </palette>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>Add Component :)</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <widget class="QPushButton" name="pushButton_led">
     <property name="geometry">
      <rect>
-      <x>40</x>
-      <y>100</y>
+      <x>60</x>
+      <y>70</y>
       <width>171</width>
       <height>211</height>
      </rect>
@@ -146,14 +146,117 @@
      </size>
     </property>
    </widget>
+   <widget class="QPushButton" name="pushButton_resistor">
+    <property name="geometry">
+     <rect>
+      <x>280</x>
+      <y>70</y>
+      <width>171</width>
+      <height>211</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="icon">
+     <iconset resource="resources.qrc">
+      <normaloff>:/resources/images/resistor.png</normaloff>:/resources/images/resistor.png</iconset>
+    </property>
+    <property name="iconSize">
+     <size>
+      <width>150</width>
+      <height>150</height>
+     </size>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="pushButton_button">
+    <property name="geometry">
+     <rect>
+      <x>520</x>
+      <y>70</y>
+      <width>171</width>
+      <height>211</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="icon">
+     <iconset resource="resources.qrc">
+      <normaloff>:/resources/images/button_up.png</normaloff>:/resources/images/button_up.png</iconset>
+    </property>
+    <property name="iconSize">
+     <size>
+      <width>150</width>
+      <height>150</height>
+     </size>
+    </property>
+   </widget>
+   <widget class="QLabel" name="resistorLabel">
+    <property name="geometry">
+     <rect>
+      <x>340</x>
+      <y>290</y>
+      <width>49</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Resistor</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="ledLabel">
+    <property name="geometry">
+     <rect>
+      <x>120</x>
+      <y>290</y>
+      <width>49</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Led</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="buttonLabel">
+    <property name="geometry">
+     <rect>
+      <x>590</x>
+      <y>290</y>
+      <width>49</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Button</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="choseLabel">
+    <property name="geometry">
+     <rect>
+      <x>120</x>
+      <y>20</y>
+      <width>541</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>20</pointsize>
+     </font>
+    </property>
+    <property name="text">
+     <string>Click on a Component to Add A Component</string>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>800</width>
-     <height>25</height>
+     <width>767</width>
+     <height>22</height>
     </rect>
    </property>
   </widget>

@@ -15,6 +15,16 @@ public:
     explicit Add_New_Element(QWidget *parent = nullptr);
     ~Add_New_Element();
 
+signals:
+    void ledRequested();
+    void resistorRequested();
+    void buttonRequested();
+
+private slots:
+    void on_pushButton_led_clicked();
+    void on_pushButton_resistor_clicked();
+    void on_pushButton_button_clicked();
+
 private:
     Ui::Add_New_Element *ui;
 };

@@ -32,17 +32,30 @@ public:
     // Getter
     int pinNumber() const { return m_pinNumber; }
     PinType pinType() const {return m_type;}
+    
+    // Get parent component
+    ComponentItem* parentComponent() const;
+    
+    // Get pin name based on parent component type
+    QString getPinName() const;
+    
+    // Get and set component ID
+    int getComponentId() const { return m_componentId; }
+    void setComponentId(int id) { m_componentId = id; }
 
 signals:
     void stateChanged(bool high); // High / Low Signal
+    void pinClicked(PinItem* pin); // Signal emitted when pin is clicked
 
 protected:
+    void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
     QVariant itemChange(GraphicsItemChange change, const QVariant& value) override;
 
 private:
     int m_pinNumber;
     PinType m_type;
     bool m_isHigh = false;
+    int m_componentId = -1; // ID of the component this pin belongs to
 
     QSet<CableItem*> m_cables;
 };

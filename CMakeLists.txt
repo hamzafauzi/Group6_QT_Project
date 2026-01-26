@@ -52,7 +52,11 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         simulatorscene.h simulatorscene.cpp
         pinitem.h pinitem.cpp
         leditem.h leditem.cpp
+        resistoritem.h resistoritem.cpp
+        buttonitem.h buttonitem.cpp
         cableitem.h cableitem.cpp
+        diagram.h diagram.cpp
+        pininfodialog.h pininfodialog.cpp
         add_new_element.h add_new_element.cpp add_new_element.ui
 
     )
