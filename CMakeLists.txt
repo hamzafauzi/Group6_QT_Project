@@ -53,6 +53,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         pinitem.h pinitem.cpp
         leditem.h leditem.cpp
         cableitem.h cableitem.cpp
+        add_new_element.h add_new_element.cpp add_new_element.ui
 
     )
 else()
