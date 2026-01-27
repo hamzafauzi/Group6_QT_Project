@@ -29,6 +29,20 @@ StartWindow::StartWindow(QWidget *parent)
     // We'll use a different approach - store it as user data
     m_scene->setProperty("DiagramPointer", QVariant::fromValue<Diagram*>(m_diagram));
 
+    // ⭐ NEW: Connect diagram signals to logging
+    connect(m_diagram, &Diagram::connectionLogged,
+            this, &StartWindow::onConnectionLogged);
+
+    connect(m_diagram, &Diagram::componentAdded,
+            this, &StartWindow::onComponentAdded);
+
+    // ⭐ NEW: Initialize compilation output
+    if (ui->textEdit_compilation_output) {
+        ui->textEdit_compilation_output->clear();
+        ui->textEdit_compilation_output->append("=== Arduino Simulator - Circuit Logger ===");
+        ui->textEdit_compilation_output->append("Ready to build your circuit...\n");
+    }
+
     // Connect PushButtons
     connect(ui->pushButton_add_new_control_element, &QPushButton::clicked, this, [this]() {
         if (!new_element) {
@@ -50,10 +64,10 @@ StartWindow::StartWindow(QWidget *parent)
     });
 
     // Test LED (using diagram)
-    m_diagram->addLED(QPointF(20, 20));
+    //m_diagram->addLED(QPointF(20, 20));
 
     // Test LED2 (using diagram)
-    m_diagram->addLED(QPointF(30, 30));
+    //m_diagram->addLED(QPointF(30, 30));
 
     // Test flashing LED
     ArduinoItem* arduino = m_diagram->getArduino();
@@ -116,6 +130,43 @@ void StartWindow::onButtonRequested()
     if (componentId != -1) {
         qDebug() << "Button added with ID:" << componentId << "at position:" << position;
     }
+}
+
+// ⭐ NEW: Slot to handle connection logging
+void StartWindow::onConnectionLogged(const QString &message)
+{
+    // Log to compilation output widget
+    if (ui->textEdit_compilation_output) {
+        ui->textEdit_compilation_output->append(message);
+
+        // Auto-scroll to bottom
+        QTextCursor cursor = ui->textEdit_compilation_output->textCursor();
+        cursor.movePosition(QTextCursor::End);
+        ui->textEdit_compilation_output->setTextCursor(cursor);
+    }
+
+    // Also show in status bar briefly
+    if (statusBar()) {
+        statusBar()->showMessage(message, 3000);  // Show for 3 seconds
+    }
+
+    // Log to console for debugging
+    qDebug() << "CONNECTION:" << message;
+}
+
+// ⭐ NEW: Slot to handle component addition logging
+void StartWindow::onComponentAdded(int componentId, const QString &componentType)
+{
+    QString componentName = m_diagram->getComponentName(componentId);
+    QString message = QString("+ Component added: %1 (ID: %2)")
+                          .arg(componentName)
+                          .arg(componentId);
+
+    if (ui->textEdit_compilation_output) {
+        ui->textEdit_compilation_output->append(message);
+    }
+
+    qDebug() << "COMPONENT ADDED:" << message;
 }
 
 

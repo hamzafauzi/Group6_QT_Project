@@ -97,6 +97,7 @@ signals:
     void componentClicked(int componentId);
     void connectionAdded(int connectionId);
     void connectionRemoved(int connectionId);
+    void connectionLogged(const QString &message);
 
 private:
     QGraphicsScene *m_scene;
@@ -124,6 +125,8 @@ private:
     void updateConnectionsForComponent(int componentId);
     void removeConnectionsForComponent(int componentId);
     QString generateComponentName(const QString &type, int id);
+    QString generateConnectionLogMessage(const ConnectionData &conn,PinItem* fromPin,PinItem* toPin);
+    QString getPinDisplayName(PinItem* pin, const QString &pinKey);
     
     // Create cable using the old style (manual cable creation)
     CableItem* createCable(PinItem* fromPin, PinItem* toPin);

@@ -59,14 +59,14 @@ Diagram::~Diagram()
 int Diagram::addLED(const QPointF &position)
 {
     if (!m_scene) return -1;
-    
+
     LedItem *led = new LedItem();
     led->setPos(position);
     m_scene->addItem(led);
-    
+
     int id = m_nextComponentId++;
     m_components[id] = led;
-    
+
     // Create component name
     m_componentCounters["LED"]++;
     int ledNumber = m_componentCounters["LED"];
@@ -75,7 +75,7 @@ int Diagram::addLED(const QPointF &position)
 
     // Create a compact key like "led1"
     QString componentKey = QString("led%1").arg(ledNumber);
-    
+
     // Store component ID in pins so they know which component they belong to
     led->signalPin()->setComponentId(id);
     led->groundPin()->setComponentId(id);
@@ -94,31 +94,13 @@ int Diagram::addLED(const QPointF &position)
         m_pinChain.insert(insertPos, led->signalPin()->uniqueName());
         m_pinChain.insert(insertPos + 1, led->groundPin()->uniqueName());
     }
-    
+
     // Make component clickable
     led->setFlag(QGraphicsItem::ItemIsSelectable, true);
-    
-    // Create default cables using the old style
-    if (m_arduino) {
-        // Connect LED ground to Arduino ground (old style)
-        CableItem* groundCable = createCable(led->groundPin(), m_arduino->groundPin());
-        
-        if (groundCable) {
-            // Store the connection
-            int connId = m_nextConnectionId++;
-            m_connections[connId] = groundCable;
-            ConnectionData connData;
-            connData.id = connId;
-            connData.fromComponentType = "LED";
-            connData.fromComponentId = id;
-            connData.fromPinName = "groundPin";
-            connData.toComponentType = "Arduino";
-            connData.toComponentId = 0;
-            connData.toPinName = "ground";
-            m_connectionData[connId] = connData;
-        }
-    }
-    
+
+    // ⭐ REMOVED: Automatic ground cable creation
+    // Users must manually connect components now!
+
     emit componentAdded(id, "LED");
     return id;
 }
@@ -391,6 +373,15 @@ int Diagram::addConnection(int fromComponentId, const QString &fromPinName,
     connData.toPinName = toPinName;
     
     m_connectionData[id] = connData;
+
+    //Generate human-readable connection message
+    QString logMessage = generateConnectionLogMessage(connData, fromPin, toPin);
+
+    //NEW: Emit signal for UI to display
+    emit connectionLogged(logMessage);
+
+    // NEW: Also log to console
+    qDebug() << "CONNECTION:" << logMessage;
     
     // Note: createCable() already added the cable to pins and scene
     // So we don't need to do it again here
@@ -740,3 +731,57 @@ void Diagram::onPinSelected(PinItem* pin)
     // Reset pending
     m_pendingPin = nullptr;
 }
+QString Diagram::generateConnectionLogMessage(const ConnectionData &conn,
+                                              PinItem* fromPin,
+                                              PinItem* toPin)
+{
+    // Get component names
+    QString fromComponentName = getComponentName(conn.fromComponentId);
+    QString toComponentName = getComponentName(conn.toComponentId);
+
+    // Get pin display names
+    QString fromPinDisplay = getPinDisplayName(fromPin, conn.fromPinName);
+    QString toPinDisplay = getPinDisplayName(toPin, conn.toPinName);
+
+    // Format: "✓ LED 1 (Anode) → Button 1 (Pin 1)"
+    QString message = QString("✓ %1 (%2) → %3 (%4)")
+                          .arg(fromComponentName)
+                          .arg(fromPinDisplay)
+                          .arg(toComponentName)
+                          .arg(toPinDisplay);
+
+    // Alternative format with unique names:
+    // "✓ Connection: led1pin1 → btn1pin2"
+    // QString message = QString("✓ Connection: %1 → %2")
+    //     .arg(fromPin->uniqueName())
+    //     .arg(toPin->uniqueName());
+
+    return message;
+}
+
+QString Diagram::getPinDisplayName(PinItem* pin, const QString &pinKey)
+{
+    if (!pin) return "Unknown Pin";
+
+    // Map internal pin keys to display names
+    if (pinKey == "signalPin") return "Anode (+)";
+    if (pinKey == "groundPin") return "Cathode (-)";
+    if (pinKey == "leftPin") return "Left Terminal";
+    if (pinKey == "rightPin") return "Right Terminal";
+    if (pinKey == "pin1") return "Pin 1";
+    if (pinKey == "pin2") return "Pin 2";
+    if (pinKey == "pin3") return "Pin 3";
+    if (pinKey == "pin4") return "Pin 4";
+    if (pinKey == "gnd") return "Ground (GND)";
+    if (pinKey.startsWith("pin")) {
+        // Arduino digital pins
+        QString numStr = pinKey.mid(3);
+        return QString("Digital Pin %1").arg(numStr);
+    }
+
+    return pinKey;  // Fallback
+}
+
+
+
+

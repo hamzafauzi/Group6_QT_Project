@@ -23,6 +23,9 @@ private slots:
     void onLedRequested();
     void onResistorRequested();
     void onButtonRequested();
+    void onConnectionLogged(const QString &message);
+    void onComponentAdded(int componentId, const QString &componentType);
+
 
 private:
     Ui::StartWindow *ui;
