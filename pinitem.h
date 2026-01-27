@@ -42,6 +42,14 @@ public:
     // Get and set component ID
     int getComponentId() const { return m_componentId; }
     void setComponentId(int id) { m_componentId = id; }
+    
+    // Unique pin id string (example: "resistor1pin1")
+    QString uniqueName() const { return m_uniqueName; }
+    void setUniqueName(const QString &name) { m_uniqueName = name; }
+
+    // Internal pin key used for connections (signalPin, groundPin, leftPin, etc.)
+    QString pinKey() const { return m_pinKey; }
+    void setPinKey(const QString &key) { m_pinKey = key; }
 
 signals:
     void stateChanged(bool high); // High / Low Signal
@@ -56,6 +64,8 @@ private:
     PinType m_type;
     bool m_isHigh = false;
     int m_componentId = -1; // ID of the component this pin belongs to
+    QString m_uniqueName;   // Unique pin id string
+    QString m_pinKey;       // Internal pin key for connection mapping
 
     QSet<CableItem*> m_cables;
 };

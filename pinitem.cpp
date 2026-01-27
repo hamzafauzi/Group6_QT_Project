@@ -163,6 +163,12 @@ ComponentItem* PinItem::parentComponent() const
 
 QString PinItem::getPinName() const
 {
+    // If we already have a uniqueName (like "led1pin1", "btn1pin2"), return it
+    if (!m_uniqueName.isEmpty()) {
+        return m_uniqueName;
+    }
+
+    // Fallback to old human-readable names if uniqueName was not set
     ComponentItem* parent = parentComponent();
     if (!parent) {
         return "Unknown";
@@ -253,13 +259,17 @@ void PinItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
             parentWidget = scene()->views().first();
         }
         
-        // Create and show dialog
+        // Create and show dialog (non-modal so user can click next pin)
         PinInfoDialog* dialog = new PinInfoDialog(parentWidget);
         dialog->setPinInfo(componentName, pinName);
         dialog->setAttribute(Qt::WA_DeleteOnClose);
-        dialog->exec();
+        dialog->show();
         
-        // Emit signal for other parts of the system if needed
+        // Notify diagram about this pin selection
+        if (Diagram* diagram = Diagram::getDiagramFromScene(scene())) {
+            diagram->onPinSelected(this);
+        }
+        
         emit pinClicked(this);
         
         event->accept();
@@ -269,4 +279,3 @@ void PinItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
     // Let parent handle other events
     ComponentItem::mousePressEvent(event);
 }
-

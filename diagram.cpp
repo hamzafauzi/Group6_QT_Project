@@ -19,11 +19,32 @@ Diagram::Diagram(QGraphicsScene *scene, QObject *parent)
     m_componentCounters["LED"] = 0;
     m_componentCounters["Resistor"] = 0;
     m_componentCounters["Button"] = 0;
+
+    // Initialize the chain with Arduino start/end points
+    // diagramarray[0] should always be an Arduino pin like "ard1pin13"
+    m_pinChain.clear();
+    m_pinChain.append("ard1pin13");
+    m_pinChain.append("ard1gnd");
     
     // Create Arduino board if scene is provided
     if (m_scene) {
         m_arduino = new ArduinoItem();
         m_scene->addItem(m_arduino);
+
+        // Give Arduino pins unique names and ids
+        if (PinItem* g = m_arduino->groundPin()) {
+            g->setComponentId(0);
+            g->setPinKey("gnd");
+            g->setUniqueName("ard1gnd");
+        }
+        for (int i = 0; i <= 13; ++i) {
+            PinItem* p = m_arduino->getPin(i);
+            if (p) {
+                p->setComponentId(0);
+                p->setPinKey(QString("pin%1").arg(i));
+                p->setUniqueName(QString("ard1pin%1").arg(i));
+            }
+        }
     }
 }
 
@@ -48,12 +69,31 @@ int Diagram::addLED(const QPointF &position)
     
     // Create component name
     m_componentCounters["LED"]++;
-    QString componentName = QString("LED %1").arg(m_componentCounters["LED"]);
+    int ledNumber = m_componentCounters["LED"];
+    QString componentName = QString("LED %1").arg(ledNumber);
     m_componentNames[id] = componentName;
+
+    // Create a compact key like "led1"
+    QString componentKey = QString("led%1").arg(ledNumber);
     
     // Store component ID in pins so they know which component they belong to
     led->signalPin()->setComponentId(id);
     led->groundPin()->setComponentId(id);
+
+    // Internal pin keys
+    led->signalPin()->setPinKey("signalPin");
+    led->groundPin()->setPinKey("groundPin");
+
+    // Give pins unique names like "led1pin1", "led1pin2"
+    led->signalPin()->setUniqueName(componentKey + "pin1");
+    led->groundPin()->setUniqueName(componentKey + "pin2");
+
+    // Add pins to the chain before Arduino GND
+    if (m_pinChain.size() >= 1) {
+        int insertPos = m_pinChain.size() - 1; // before "arduinognd"
+        m_pinChain.insert(insertPos, led->signalPin()->uniqueName());
+        m_pinChain.insert(insertPos + 1, led->groundPin()->uniqueName());
+    }
     
     // Make component clickable
     led->setFlag(QGraphicsItem::ItemIsSelectable, true);
@@ -97,12 +137,31 @@ int Diagram::addResistor(const QPointF &position, int resistance)
     
     // Create component name
     m_componentCounters["Resistor"]++;
-    QString componentName = QString("Resistor %1").arg(m_componentCounters["Resistor"]);
+    int resistorNumber = m_componentCounters["Resistor"];
+    QString componentName = QString("Resistor %1").arg(resistorNumber);
     m_componentNames[id] = componentName;
+
+    // Create a compact key like "rst1"
+    QString componentKey = QString("rst%1").arg(resistorNumber);
     
     // Store component ID in pins so they know which component they belong to
     resistor->leftPin()->setComponentId(id);
     resistor->rightPin()->setComponentId(id);
+
+    // Internal pin keys
+    resistor->leftPin()->setPinKey("leftPin");
+    resistor->rightPin()->setPinKey("rightPin");
+
+    // Give pins unique names like "resistor1pin1", "resistor1pin2"
+    resistor->leftPin()->setUniqueName(componentKey + "pin1");
+    resistor->rightPin()->setUniqueName(componentKey + "pin2");
+
+    // Add pins to the chain before Arduino GND
+    if (m_pinChain.size() >= 1) {
+        int insertPos = m_pinChain.size() - 1; // before "arduinognd"
+        m_pinChain.insert(insertPos, resistor->leftPin()->uniqueName());
+        m_pinChain.insert(insertPos + 1, resistor->rightPin()->uniqueName());
+    }
     
     // Make component clickable
     resistor->setFlag(QGraphicsItem::ItemIsSelectable, true);
@@ -127,14 +186,39 @@ int Diagram::addButton(const QPointF &position)
     
     // Create component name
     m_componentCounters["Button"]++;
-    QString componentName = QString("Button %1").arg(m_componentCounters["Button"]);
+    int buttonNumber = m_componentCounters["Button"];
+    QString componentName = QString("Button %1").arg(buttonNumber);
     m_componentNames[id] = componentName;
+
+    // Create a compact key like "btn1"
+    QString componentKey = QString("btn%1").arg(buttonNumber);
     
     // Store component ID in pins so they know which component they belong to
     button->pin1()->setComponentId(id);
     button->pin2()->setComponentId(id);
     button->pin3()->setComponentId(id);
     button->pin4()->setComponentId(id);
+
+    // Internal pin keys
+    button->pin1()->setPinKey("pin1");
+    button->pin2()->setPinKey("pin2");
+    button->pin3()->setPinKey("pin3");
+    button->pin4()->setPinKey("pin4");
+
+    // Give pins unique names like "button1pin1"... "button1pin4"
+    button->pin1()->setUniqueName(componentKey + "pin1");
+    button->pin2()->setUniqueName(componentKey + "pin2");
+    button->pin3()->setUniqueName(componentKey + "pin3");
+    button->pin4()->setUniqueName(componentKey + "pin4");
+
+    // Add pins to the chain before Arduino GND
+    if (m_pinChain.size() >= 1) {
+        int insertPos = m_pinChain.size() - 1; // before "arduinognd"
+        m_pinChain.insert(insertPos, button->pin1()->uniqueName());
+        m_pinChain.insert(insertPos + 1, button->pin2()->uniqueName());
+        m_pinChain.insert(insertPos + 2, button->pin3()->uniqueName());
+        m_pinChain.insert(insertPos + 3, button->pin4()->uniqueName());
+    }
     
     // Make component clickable
     button->setFlag(QGraphicsItem::ItemIsSelectable, true);
@@ -627,4 +711,32 @@ Diagram* Diagram::getDiagramFromScene(QGraphicsScene* scene)
     }
     
     return nullptr;
+}
+
+void Diagram::onPinSelected(PinItem* pin)
+{
+    if (!pin) return;
+
+    // First click: store pending
+    if (!m_pendingPin) {
+        m_pendingPin = pin;
+        return;
+    }
+
+    // Second click: connect pending to this pin (if different)
+    if (m_pendingPin != pin) {
+        int fromId = m_pendingPin->getComponentId();
+        int toId = pin->getComponentId();
+        QString fromKey = m_pendingPin->pinKey();
+        QString toKey = pin->pinKey();
+
+        // Add connection and wire
+        addConnection(fromId, fromKey, toId, toKey);
+
+        // Also record chain edge
+        m_pinChain.append(m_pendingPin->uniqueName() + "->" + pin->uniqueName());
+    }
+
+    // Reset pending
+    m_pendingPin = nullptr;
 }

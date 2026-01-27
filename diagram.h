@@ -64,6 +64,9 @@ public:
     
     // Get component name (e.g., "LED 1", "Button 2")
     QString getComponentName(int componentId) const;
+
+    // Chain of pin names (example: "arduinopin13", "led1pin1", ...)
+    QStringList getPinChain() const { return m_pinChain; }
     
     // Connection management
     int addConnection(int fromComponentId, const QString &fromPinName,
@@ -71,6 +74,9 @@ public:
     bool removeConnection(int connectionId);
     QList<ConnectionData> getAllConnections() const;
     QList<ConnectionData> getConnectionsForComponent(int componentId) const;
+
+    // Handle pin click to support two-click connect
+    void onPinSelected(PinItem* pin);
     
     // Component removal
     bool removeComponent(int componentId);
@@ -102,10 +108,16 @@ private:
     QMap<QString, int> m_componentCounters; // Count how many of each type we have
     int m_nextComponentId;
     
+    // Chain of pin names in order
+    QStringList m_pinChain;
+    
     // Connection storage
     QMap<int, CableItem*> m_connections;
     QMap<int, ConnectionData> m_connectionData;
     int m_nextConnectionId;
+
+    // Pending pin selection for two-click connect
+    PinItem* m_pendingPin = nullptr;
     
     // Helper methods
     PinItem* getPinForComponent(int componentId, const QString &pinName);
