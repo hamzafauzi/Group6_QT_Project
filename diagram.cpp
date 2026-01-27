@@ -98,8 +98,7 @@ int Diagram::addLED(const QPointF &position)
     // Make component clickable
     led->setFlag(QGraphicsItem::ItemIsSelectable, true);
 
-    // ⭐ REMOVED: Automatic ground cable creation
-    // Users must manually connect components now!
+
 
     emit componentAdded(id, "LED");
     return id;
@@ -377,14 +376,13 @@ int Diagram::addConnection(int fromComponentId, const QString &fromPinName,
     //Generate human-readable connection message
     QString logMessage = generateConnectionLogMessage(connData, fromPin, toPin);
 
-    //NEW: Emit signal for UI to display
+    //Emit signal for UI to display
     emit connectionLogged(logMessage);
 
-    // NEW: Also log to console
+    //Also log to console
     qDebug() << "CONNECTION:" << logMessage;
     
-    // Note: createCable() already added the cable to pins and scene
-    // So we don't need to do it again here
+
     
     emit connectionAdded(id);
     return id;
@@ -731,9 +729,9 @@ void Diagram::onPinSelected(PinItem* pin)
     // Reset pending
     m_pendingPin = nullptr;
 }
-QString Diagram::generateConnectionLogMessage(const ConnectionData &conn,
-                                              PinItem* fromPin,
-                                              PinItem* toPin)
+
+QString Diagram::generateConnectionLogMessage(const ConnectionData &conn,PinItem* fromPin,PinItem* toPin)
+
 {
     // Get component names
     QString fromComponentName = getComponentName(conn.fromComponentId);
@@ -743,7 +741,7 @@ QString Diagram::generateConnectionLogMessage(const ConnectionData &conn,
     QString fromPinDisplay = getPinDisplayName(fromPin, conn.fromPinName);
     QString toPinDisplay = getPinDisplayName(toPin, conn.toPinName);
 
-    // Format: "✓ LED 1 (Anode) → Button 1 (Pin 1)"
+    // Format: "LED 1 (Anode) → Button 1 (Pin 1)"
     QString message = QString("✓ %1 (%2) → %3 (%4)")
                           .arg(fromComponentName)
                           .arg(fromPinDisplay)
@@ -751,8 +749,8 @@ QString Diagram::generateConnectionLogMessage(const ConnectionData &conn,
                           .arg(toPinDisplay);
 
     // Alternative format with unique names:
-    // "✓ Connection: led1pin1 → btn1pin2"
-    // QString message = QString("✓ Connection: %1 → %2")
+    // "Connection: led1pin1 → btn1pin2"
+    // QString message = QString("Connection: %1 → %2")
     //     .arg(fromPin->uniqueName())
     //     .arg(toPin->uniqueName());
 
