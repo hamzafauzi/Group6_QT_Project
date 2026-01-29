@@ -20,7 +20,8 @@ public:
     // for GND / Power
     PinItem(PinType, QGraphicsItem* parent = nullptr);
 
-    void updateState() override;   // Pflicht für ComponentItem
+    void setHighlighted(bool on);
+    void updateState() override;   // nescessary für ComponentItem
 
     // Signals
     void setHigh();
@@ -69,7 +70,7 @@ private:
     int m_componentId = -1; // ID of the component this pin belongs to
     QString m_uniqueName;   // Unique pin id string
     QString m_pinKey;       // Internal pin key for connection mapping
-
+    bool m_highlighted = false;
     QSet<CableItem*> m_cables;
 };
 

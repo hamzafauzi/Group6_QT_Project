@@ -6,12 +6,7 @@
 #include <QGraphicsView>
 #include "cableitem.h"
 #include "componentitem.h"
-#include "leditem.h"
-#include "resistoritem.h"
-#include "buttonitem.h"
-#include "arduinoitem.h"
-#include "pininfodialog.h"
-#include "diagram.h"
+#include "simulatorscene.h"
 
 PinItem::PinItem(int pinNumber, PinType type, QGraphicsItem* parent)
     : ComponentItem(QPixmap(), parent), m_pinNumber(pinNumber), m_type(type)
@@ -166,6 +161,45 @@ PinItem::~PinItem(){
 
 void PinItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
 {
-    // z.B. nur auswählen, NICHT löschen
-    event->accept();
+    if(event->button() == Qt::LeftButton){
+        // Pin of type Led is not allowed to select
+        if(m_type == PinType::Led){
+            event->ignore();
+            return;
+        }
+
+        if(auto simScene = qobject_cast<SimulatorScene*>(scene())){
+            simScene->pinClicked(this);
+        }
+        event->accept();
+        return;
+    }
+    ComponentItem::mousePressEvent(event);
+}
+
+void PinItem::setHighlighted(bool on){
+    m_highlighted = on;
+
+    QPixmap pix(10,10);
+    pix.fill(Qt::transparent);
+    QPainter p(&pix);
+
+    if (on)
+        p.setBrush(Qt::blue);
+    else{
+        if(this->m_type == Led){
+            p.setBrush(Qt::white);
+        }
+        else if(this->m_type == Ground){
+            p.setBrush(Qt::darkGray);
+        }
+        else{
+            p.setBrush(Qt::gray);
+        }
+    }
+    p.setPen(Qt::black);
+    p.drawEllipse(0,0,10,10);
+    p.end();
+
+    setPixmap(pix);
 }

@@ -10,6 +10,7 @@
 #include "cableitem.h"
 #include "buttonitem.h"
 #include "resistoritem.h"
+#include "arduinoitem.h"
 
 StartWindow::StartWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -58,23 +59,21 @@ StartWindow::StartWindow(QWidget *parent)
 
 
     // Test flashing LED
-    /*ArduinoItem* arduino = m_diagram->getArduino();
-    if (arduino) {
-        PinItem* pin7 = arduino->getPin(7);
-        QTimer* timer = new QTimer(this);
-        bool state = false; // LOW
+    PinItem* pin7 = arduino->getPin(7);
+    QTimer* timer = new QTimer(this);
 
-        connect(timer, &QTimer::timeout, this, [=,&state]() mutable {
-            if (state)
-                pin7->setLow();
-            else
-                pin7->setHigh();
+    connect(timer, &QTimer::timeout, this, [pin7, state = false]() mutable {
+        if (state){
+            pin7->setLow();
+        }
+        else
+            pin7->setHigh();
 
-            state = !state;
-        });
+        state = !state;
+    });
 
-        timer->start(500);
-    }*/
+    timer->start(500);
+
 }
 
 StartWindow::~StartWindow()

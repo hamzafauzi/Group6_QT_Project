@@ -1,4 +1,6 @@
 #include "simulatorscene.h"
+#include "pinitem.h"
+#include "cableitem.h"
 
 #include <QPainter>
 #include <QPen>
@@ -31,3 +33,23 @@ void SimulatorScene::drawBackground(QPainter* painter, const QRectF& rect)
         painter->drawLine(scene.left(), y, scene.right(), y);
 }
 
+void SimulatorScene::pinClicked(PinItem* pin){
+    // First Click -> remember pin
+    if(!m_selectedPin){
+        m_selectedPin = pin;
+        pin->setHighlighted(true);
+        return;
+    }
+    // Second Click
+    if (m_selectedPin && m_selectedPin != pin)
+    {
+        CableItem* cable = new CableItem(m_selectedPin, pin);
+        addItem(cable);
+
+        m_selectedPin->addCable(cable);
+        pin->addCable(cable);
+    }
+    // Reset
+    m_selectedPin->setHighlighted(false);
+    m_selectedPin = nullptr;
+}
