@@ -8,7 +8,7 @@ class CableItem : public QGraphicsLineItem
 {
 public:
     CableItem(PinItem* from, PinItem* to, QGraphicsItem* parent = nullptr);
-
+    ~CableItem();
     void updateLine();
     void propagateSignal(PinItem* fromPin);
     void setHigh();

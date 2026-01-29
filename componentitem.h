@@ -15,6 +15,9 @@ public:
 
     // Has to be implemented by all components
     virtual void updateState() = 0;
+
+protected:
+    void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
 };
 
 #endif // COMPONENTITEM_H

@@ -3,7 +3,6 @@
 
 #include <QMainWindow>
 #include "add_new_element.h"
-#include "diagram.h"
 
 class SimulatorScene;
 
@@ -24,7 +23,6 @@ private slots:
     void onResistorRequested();
     void onButtonRequested();
     void onConnectionLogged(const QString &message);
-    void onComponentAdded(int componentId, const QString &componentType);
 
 
 private:
@@ -32,7 +30,6 @@ private:
 
     Add_New_Element* new_element;
     SimulatorScene* m_scene;
-    Diagram* m_diagram;
     
     QPointF getRandomPosition();
 };

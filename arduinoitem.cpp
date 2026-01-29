@@ -1,6 +1,7 @@
 #include "arduinoitem.h"
 #include <QPixmap>
 #include <QGraphicsItem>
+#include <QGraphicsSceneMouseEvent>
 #include "pinitem.h"
 
 ArduinoItem::ArduinoItem(QGraphicsItem* parent)
@@ -77,4 +78,13 @@ PinItem* ArduinoItem::getPin(int number){
 
 PinItem* ArduinoItem::groundPin(){
     return m_groundPin;
+}
+
+void ArduinoItem::mousePressEvent(QGraphicsSceneMouseEvent* event){
+    // Arduino should not be deleted
+    if(event->button() == Qt::RightButton){
+        event->accept(); // use click
+        return;
+    }
+    ComponentItem::mousePressEvent(event);
 }

@@ -1,4 +1,5 @@
 #include "cableitem.h"
+#include "pinitem.h"
 #include <QPainterPath>
 #include <QPen>
 
@@ -8,6 +9,8 @@ CableItem::CableItem(PinItem* from, PinItem* to, QGraphicsItem* parent)
     m_to(to)
 {
     setPen(QPen(Qt::black, 4));
+    m_from->addCable(this);
+    m_to->addCable(this);
     updateLine();
 }
 
@@ -59,4 +62,9 @@ void CableItem::propagateSignal(PinItem* fromPin)
         otherPin->setHigh();
     else
         otherPin->setLow();
+}
+
+CableItem::~CableItem(){
+    if(m_from) m_from->removeCable(this);
+    if(m_to) m_to->removeCable(this);
 }

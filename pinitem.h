@@ -4,6 +4,7 @@
 #pragma once
 #include "componentitem.h"
 #include <QBrush>
+#include <QSet>
 
 class CableItem;
 
@@ -28,6 +29,7 @@ public:
 
     // Cable management
     void addCable(CableItem* cable);
+    void removeCable(CableItem* cable);
 
     // Getter
     int pinNumber() const { return m_pinNumber; }
@@ -56,6 +58,7 @@ signals:
     void pinClicked(PinItem* pin); // Signal emitted when pin is clicked
 
 protected:
+    ~PinItem();
     void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
     QVariant itemChange(GraphicsItemChange change, const QVariant& value) override;
 

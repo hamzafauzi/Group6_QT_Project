@@ -6,6 +6,7 @@
 
 class ArduinoItem : public ComponentItem
 {
+    Q_OBJECT
 public:
     explicit ArduinoItem(QGraphicsItem* parent = nullptr);
 
@@ -19,6 +20,9 @@ private:
 
     QMap<int, PinItem*> m_Pins;
     PinItem* m_groundPin = nullptr;
+
+protected:
+    void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
 };
 
 #endif // ARDUINOITEM_H

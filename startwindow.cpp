@@ -8,33 +8,26 @@
 #include "arduinoitem.h"
 #include "leditem.h"
 #include "cableitem.h"
+#include "buttonitem.h"
+#include "resistoritem.h"
 
 StartWindow::StartWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::StartWindow)
     , new_element(nullptr)
-    , m_scene(nullptr)
-    , m_diagram(nullptr)
 {
     ui->setupUi(this);
 
-    // Create scene and diagram
+    // Create scene
     m_scene = new SimulatorScene(this);
     ui->graphicsView->setScene(m_scene);
-    
-    // Create diagram - it will create Arduino board internally
-    m_diagram = new Diagram(m_scene, this);
+
+    // Create Arduino-Board
+    ArduinoItem* arduino = new ArduinoItem();
+    m_scene->addItem(arduino);
     
     // Store diagram reference in scene so pins can access it
     // We'll use a different approach - store it as user data
-    m_scene->setProperty("DiagramPointer", QVariant::fromValue<Diagram*>(m_diagram));
-
-    // Connect diagram signals to logging
-    connect(m_diagram, &Diagram::connectionLogged,
-            this, &StartWindow::onConnectionLogged);
-
-    connect(m_diagram, &Diagram::componentAdded,
-            this, &StartWindow::onComponentAdded);
 
     // Initialize compilation output
     if (ui->textEdit_compilation_output) {
@@ -63,14 +56,9 @@ StartWindow::StartWindow(QWidget *parent)
         new_element->activateWindow();  // Activate the window
     });
 
-    // Test LED (using diagram)
-    //m_diagram->addLED(QPointF(20, 20));
-
-    // Test LED2 (using diagram)
-    //m_diagram->addLED(QPointF(30, 30));
 
     // Test flashing LED
-    ArduinoItem* arduino = m_diagram->getArduino();
+    /*ArduinoItem* arduino = m_diagram->getArduino();
     if (arduino) {
         PinItem* pin7 = arduino->getPin(7);
         QTimer* timer = new QTimer(this);
@@ -86,7 +74,7 @@ StartWindow::StartWindow(QWidget *parent)
         });
 
         timer->start(500);
-    }
+    }*/
 }
 
 StartWindow::~StartWindow()
@@ -106,30 +94,30 @@ void StartWindow::onLedRequested()
 {
     qDebug() << "onLedRequested called";
     QPointF position = getRandomPosition();
-    int componentId = m_diagram->addLED(position);
-    if (componentId != -1) {
-        qDebug() << "LED added with ID:" << componentId << "at position:" << position;
-    }
+    LedItem* led = new LedItem();
+    led->setPos(position);
+    m_scene->addItem(led);
+    qDebug() << "LED added with at position:" << position;
 }
 
 void StartWindow::onResistorRequested()
 {
     qDebug() << "onResistorRequested called";
     QPointF position = getRandomPosition();
-    int componentId = m_diagram->addResistor(position, 220);
-    if (componentId != -1) {
-        qDebug() << "Resistor added with ID:" << componentId << "at position:" << position;
-    }
+    ResistorItem* resistor = new ResistorItem();
+    resistor->setPos(position);
+    m_scene->addItem(resistor);
+    qDebug() << "Resistor added at position:" << position;
 }
 
 void StartWindow::onButtonRequested()
 {
     qDebug() << "onButtonRequested called";
     QPointF position = getRandomPosition();
-    int componentId = m_diagram->addButton(position);
-    if (componentId != -1) {
-        qDebug() << "Button added with ID:" << componentId << "at position:" << position;
-    }
+    ButtonItem* button = new ButtonItem();
+    button->setPos(position);
+    m_scene->addItem(button);
+    qDebug() << "Button added at position:" << position;
 }
 
 // Slot to handle connection logging
@@ -153,20 +141,3 @@ void StartWindow::onConnectionLogged(const QString &message)
     // Log to console for debugging
     qDebug() << "CONNECTION:" << message;
 }
-
-// Slot to handle component addition logging
-void StartWindow::onComponentAdded(int componentId, const QString &componentType)
-{
-    QString componentName = m_diagram->getComponentName(componentId);
-    QString message = QString("+ Component added: %1 (ID: %2)")
-                          .arg(componentName)
-                          .arg(componentId);
-
-    if (ui->textEdit_compilation_output) {
-        ui->textEdit_compilation_output->append(message);
-    }
-
-    qDebug() << "COMPONENT ADDED:" << message;
-}
-
-
