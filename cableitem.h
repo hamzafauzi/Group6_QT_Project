@@ -14,6 +14,9 @@ public:
     void setHigh();
     void setLow();
 
+protected:
+    void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
+
 private:
     PinItem* m_from;
     PinItem* m_to;

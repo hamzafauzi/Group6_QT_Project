@@ -1,7 +1,9 @@
 #include "cableitem.h"
 #include "pinitem.h"
+#include <QGraphicsScene>
 #include <QPainterPath>
 #include <QPen>
+#include <QGraphicsSceneMouseEvent>
 
 CableItem::CableItem(PinItem* from, PinItem* to, QGraphicsItem* parent)
     : QGraphicsLineItem(parent),
@@ -67,4 +69,17 @@ void CableItem::propagateSignal(PinItem* fromPin)
 CableItem::~CableItem(){
     if(m_from) m_from->removeCable(this);
     if(m_to) m_to->removeCable(this);
+}
+
+void CableItem::mousePressEvent(QGraphicsSceneMouseEvent* event){
+    if(event->button() == Qt::RightButton){
+        // remove cable from pins
+        if(m_from) m_from->removeCable(this);
+        if(m_to) m_to->removeCable(this);
+
+        scene()->removeItem(this);
+        delete this;
+        return;
+    }
+    QGraphicsLineItem::mousePressEvent(event);
 }
