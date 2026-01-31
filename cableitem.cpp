@@ -4,16 +4,25 @@
 #include <QPainterPath>
 #include <QPen>
 #include <QGraphicsSceneMouseEvent>
+#include "pinitem.h"
 
 CableItem::CableItem(PinItem* from, PinItem* to, QGraphicsItem* parent)
     : QGraphicsLineItem(parent),
     m_from(from),
     m_to(to)
 {
-    setPen(QPen(Qt::black, 4));
+    setPen(QPen(Qt::blue, 4));
     m_from->addCable(this);
     m_to->addCable(this);
     updateLine();
+    if(m_from->pinType() == PinItem::Power){
+        this->setHigh();
+        this->propagateSignal(m_from);
+    }
+    else if(m_to->pinType() == PinItem::Power){
+        this->setHigh();
+        this->propagateSignal(m_to);
+    }
 }
 
 void CableItem::updateLine()
@@ -33,20 +42,23 @@ void CableItem::updateLine()
 void CableItem::setHigh()
 {
     m_isHigh = true;
-    setPen(QPen(Qt::green, 4)); // dicke grüne Linie für HIGH
-    // LED am anderen Ende informieren
-    m_to->setHigh();
+    setPen(QPen(Qt::green, 4));
 }
 
 void CableItem::setLow()
 {
     m_isHigh = false;
-    setPen(QPen(Qt::black, 4)); // normale Linie
-    m_to->setLow();
+    setPen(QPen(Qt::blue, 4));
 }
 
 void CableItem::propagateSignal(PinItem* fromPin)
 {
+    if(m_propagating && fromPin->pinType() != PinItem::PinType::Power){
+        return;
+    }
+
+    m_propagating = true;
+
     PinItem* otherPin = (fromPin == m_from) ? m_to : m_from;
     if (!otherPin) return;
 
@@ -56,14 +68,17 @@ void CableItem::propagateSignal(PinItem* fromPin)
     {
         m_from->setLow();
         m_to->setLow();
+        m_propagating = false;
         return;
     }
 
-    // HIGH weitergeben
+    // send HIGH or low to other pins
     if (fromPin->isHigh())
         otherPin->setHigh();
     else
         otherPin->setLow();
+
+    m_propagating = false;
 }
 
 CableItem::~CableItem(){
@@ -76,7 +91,6 @@ void CableItem::mousePressEvent(QGraphicsSceneMouseEvent* event){
         // remove cable from pins
         if(m_from) m_from->removeCable(this);
         if(m_to) m_to->removeCable(this);
-
         scene()->removeItem(this);
         delete this;
         return;

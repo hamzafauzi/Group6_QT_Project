@@ -17,11 +17,13 @@ public:
 
     // Simulation
     void setOn(bool on);
+    void onPinChanged(PinItem* changedPin);
 
 private:
     PinItem* m_signalPin;
     PinItem* m_groundPin;
     bool m_isOn;
+    bool m_internalUpdate = false; // to prevent endless loop
 };
 
 #endif // LEDITEM_H

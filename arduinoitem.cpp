@@ -61,6 +61,9 @@ void ArduinoItem::createPins(){
     // Ground
     m_groundPin = new PinItem(PinItem::Ground, this);
     m_groundPin->setPos(210, 10);
+    // Power
+    m_powerPin = new PinItem(PinItem::Power, this);
+    m_powerPin->setPos(290, 330);
 }
 
 void ArduinoItem::updateState()

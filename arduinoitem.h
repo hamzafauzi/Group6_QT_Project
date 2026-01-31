@@ -20,6 +20,7 @@ private:
 
     QMap<int, PinItem*> m_Pins;
     PinItem* m_groundPin = nullptr;
+    PinItem* m_powerPin = nullptr;
 
 protected:
     void mousePressEvent(QGraphicsSceneMouseEvent* event) override;

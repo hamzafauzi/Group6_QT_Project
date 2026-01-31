@@ -17,10 +17,14 @@ public:
 
     void updateState() override;
 
+    void onPinChanged(PinItem* changedPin);
+
 private:
     PinItem* m_leftPin;
     PinItem* m_rightPin;
     int m_resistance;
+
+    bool m_internalUpdate = false; // to prevent endless loop
 };
 
 #endif // RESISTORITEM_H

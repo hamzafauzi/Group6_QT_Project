@@ -23,3 +23,19 @@ void ResistorItem::updateState()
 {
     // Resistor doesn't change visual state
 }
+
+void ResistorItem::onPinChanged(PinItem* changedPin)
+{
+    if (m_internalUpdate) return;
+
+    m_internalUpdate = true;
+
+    PinItem* other = (changedPin == m_leftPin) ? m_rightPin : m_leftPin;
+
+    if (changedPin->isHigh())
+        other->setHigh();
+    else
+        other->setLow();
+
+    m_internalUpdate = false;
+}

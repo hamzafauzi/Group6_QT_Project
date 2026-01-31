@@ -7,6 +7,10 @@
 #include "cableitem.h"
 #include "componentitem.h"
 #include "simulatorscene.h"
+#include "resistoritem.h"
+#include "leditem.h"
+#include "buttonitem.h"
+#include <QTimer>
 
 PinItem::PinItem(int pinNumber, PinType type, QGraphicsItem* parent)
     : ComponentItem(QPixmap(), parent), m_pinNumber(pinNumber), m_type(type)
@@ -16,6 +20,11 @@ PinItem::PinItem(int pinNumber, PinType type, QGraphicsItem* parent)
     QPixmap pix(10, 10);
     pix.fill(Qt::transparent);
 
+    // set power pin on high
+    if(m_type == PinItem::Power){
+        m_isHigh = true;
+    }
+
     QPainter painter(&pix);
     // Color after Pin-Type
     switch (m_type) {
@@ -23,7 +32,7 @@ PinItem::PinItem(int pinNumber, PinType type, QGraphicsItem* parent)
         painter.setBrush(Qt::darkGray);
         break;
     case PinType::Power:
-        painter.setBrush(Qt::red);
+        painter.setBrush(Qt::yellow);
         break;
     case PinType::Led:
         painter.setBrush(Qt::white);
@@ -56,13 +65,19 @@ PinItem::PinItem(PinType type, QGraphicsItem* parent)
     pix.fill(Qt::transparent);
 
     QPainter painter(&pix);
+
+    // set power pin on high
+    if(m_type == PinItem::Power){
+        m_isHigh = true;
+    }
+
     // Color after Pin-Type
     switch (m_type) {
     case PinType::Ground:
         painter.setBrush(Qt::darkGray);
         break;
     case PinType::Power:
-        painter.setBrush(Qt::red);
+        painter.setBrush(Qt::yellow);
         break;
     case PinType::Led:
         painter.setBrush(Qt::white);
@@ -93,7 +108,8 @@ void PinItem::updateState()
 
 void PinItem::setHigh()
 {
-    if (m_isHigh) return; // allready HIGH → do nothing
+    if (m_isHigh && this->m_type != Power) return; // allready HIGH and not PowerPin → do nothing
+
     m_isHigh = true;
 
     QPixmap pixmap(10,10);
@@ -109,11 +125,33 @@ void PinItem::setHigh()
     // inform all cables
     for(CableItem* cable : m_cables){
         cable->setHigh();
+        cable->propagateSignal(this);
     }
+    // if parent is resistor
+    if(auto* parentRes = dynamic_cast<ResistorItem*>(parentItem())){
+        parentRes->onPinChanged(this);
+    }
+    // if parent is led
+    if(auto* parentLed = dynamic_cast<LedItem*>(parentItem())){
+        parentLed->onPinChanged(this);
+    }
+    // if parent is button
+    if (auto* btn = dynamic_cast<ButtonItem*>(parentItem()))
+        btn->onPinChanged(this);
 }
 
 void PinItem::setLow()
 {
+    // Power Pins are always high
+    if(m_type == PinType::Power){
+        // inform all cables
+        for(CableItem* cable : m_cables){
+            cable->setHigh();
+            cable->propagateSignal(this);
+        }
+        return;
+    }
+
     if (!m_isHigh) return; // allready LOW → do nothing
     m_isHigh = false;
 
@@ -130,7 +168,19 @@ void PinItem::setLow()
     // inform all cables
     for(CableItem* cable : m_cables){
         cable->setLow();
+        cable->propagateSignal(this);
     }
+    // if parent is resistor
+    if(auto* parentRes = dynamic_cast<ResistorItem*>(parentItem())){
+        parentRes->onPinChanged(this);
+    }
+    // if parent is led
+    if(auto* parentLed = dynamic_cast<LedItem*>(parentItem())){
+        parentLed->onPinChanged(this);
+    }
+    // if parent is button
+    if (auto* btn = dynamic_cast<ButtonItem*>(parentItem()))
+        btn->onPinChanged(this);
 }
 
 void PinItem::addCable(CableItem* cable){
@@ -174,6 +224,11 @@ void PinItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
         event->accept();
         return;
     }
+    if(event->button() == Qt::RightButton){
+        event->ignore();
+        return;
+    }
+
     ComponentItem::mousePressEvent(event);
 }
 
@@ -192,6 +247,12 @@ void PinItem::setHighlighted(bool on){
         }
         else if(this->m_type == Ground){
             p.setBrush(Qt::darkGray);
+        }
+        else if(this->m_type == Power){
+            p.setBrush(Qt::yellow);
+        }
+        else if(this->isHigh()){
+            p.setBrush(Qt::green);
         }
         else{
             p.setBrush(Qt::gray);

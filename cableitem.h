@@ -21,6 +21,7 @@ private:
     PinItem* m_from;
     PinItem* m_to;
     bool m_isHigh = false;
+    bool m_propagating = false; // protection from recursion
 };
 
 #endif // CABLEITEM_H
