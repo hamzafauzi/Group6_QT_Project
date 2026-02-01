@@ -58,6 +58,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
 
 
         add_new_element.h add_new_element.cpp add_new_element.ui
+        arduinoruntime.h arduinoruntime.cpp
 
     )
 else()

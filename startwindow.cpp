@@ -7,10 +7,10 @@
 #include "simulatorscene.h"
 #include "arduinoitem.h"
 #include "leditem.h"
-#include "cableitem.h"
 #include "buttonitem.h"
 #include "resistoritem.h"
 #include "arduinoitem.h"
+#include "arduinoruntime.h"
 
 StartWindow::StartWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -26,7 +26,10 @@ StartWindow::StartWindow(QWidget *parent)
     // Create Arduino-Board
     ArduinoItem* arduino = new ArduinoItem();
     m_scene->addItem(arduino);
-    
+
+    //initial code für editor
+    ui->textEdit_editor->setText("void setup() {\n}\nvoid loop(){\ndigitalWrite(7, HIGH);\ndelay(500);\ndigitalWrite(7, LOW);\ndelay(500);\n}");
+
     // Store diagram reference in scene so pins can access it
     // We'll use a different approach - store it as user data
 
@@ -58,22 +61,17 @@ StartWindow::StartWindow(QWidget *parent)
     });
 
 
-    // Test flashing LED
-    PinItem* pin7 = arduino->getPin(7);
-    QTimer* timer = new QTimer(this);
-
-    connect(timer, &QTimer::timeout, this, [pin7, state = false]() mutable {
-        if (state){
-            pin7->setLow();
-        }
-        else
-            pin7->setHigh();
-
-        state = !state;
+    ArduinoRuntime* runtime = new ArduinoRuntime(arduino, this);
+    connect(ui->pushButton_run, &QPushButton::clicked, this, [=]{
+        qDebug() << "Run";
+        runtime->loadCode(ui->textEdit_editor->toPlainText());
+        runtime->start();
     });
 
-    timer->start(500);
-
+    connect(ui->pushButton_interrupt, &QPushButton::clicked, this, [=]{
+        qDebug() << "Interrupt";
+        runtime->stop();
+    });
 }
 
 StartWindow::~StartWindow()
