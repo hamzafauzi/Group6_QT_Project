@@ -14,30 +14,30 @@ find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
 
 set(PROJECT_SOURCES
     main.cpp
-    mainwindow.cpp
-    mainwindow.h
-    component.cpp
-    component.h
-    ledcomponent.cpp
-    ledcomponent.h
-    buttoncomponent.cpp
-    buttoncomponent.h
-    resistorcomponent.cpp
-    resistorcomponent.h
-    simulatorpanel.cpp
-    simulatorpanel.h
+
+
+
+
+
+
+
+
+
+
+
+
     arduinoparser.cpp
     arduinoparser.h
     arduinocompiler.cpp
     arduinocompiler.h
     simulationengine.cpp
     simulationengine.h
-    pinselectordialog.cpp
-    pinselectordialog.h
-    connectionselectordialog.cpp
-    connectionselectordialog.h
-    wire.cpp
-    wire.h
+
+
+
+
+
+
     resources.qrc
 )
 
@@ -56,7 +56,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         buttonitem.h buttonitem.cpp
         cableitem.h cableitem.cpp
 
-        pininfodialog.h pininfodialog.cpp
+
         add_new_element.h add_new_element.cpp add_new_element.ui
 
     )
