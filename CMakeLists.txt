@@ -57,7 +57,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         cableitem.h cableitem.cpp
 
 
-        add_new_element.h add_new_element.cpp add_new_element.ui
+        addNewElement.h addNewElement.cpp addNewElement.ui
         arduinoruntime.h arduinoruntime.cpp
 
     )

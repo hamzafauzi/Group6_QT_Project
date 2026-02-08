@@ -391,7 +391,7 @@
          </palette>
         </property>
         <property name="styleSheet">
-         <string notr="true">backgorund-color: black; color: white;</string>
+         <string notr="true"> color: white;</string>
         </property>
        </widget>
       </item>
@@ -557,7 +557,7 @@
          </palette>
         </property>
         <property name="styleSheet">
-         <string notr="true">backgorund-color: black; color: white;</string>
+         <string notr="true">: black; color: white;</string>
         </property>
        </widget>
       </item>
@@ -700,7 +700,7 @@
          </palette>
         </property>
         <property name="styleSheet">
-         <string notr="true">backgorund-color: black; color: white;</string>
+         <string notr="true">: black; color: white;</string>
         </property>
        </widget>
       </item>
@@ -716,7 +716,7 @@
 color: black;</string>
         </property>
         <property name="text">
-         <string>Compilation Output</string>
+         <string>Compilation Output (Arduino CLI)</string>
         </property>
        </widget>
       </item>
@@ -732,7 +732,7 @@ color: black;</string>
 color: black;</string>
         </property>
         <property name="text">
-         <string>Debug Output</string>
+         <string>Debug Output (Arduino Logic)</string>
         </property>
        </widget>
       </item>
@@ -746,7 +746,7 @@ color: black;</string>
      <x>0</x>
      <y>0</y>
      <width>890</width>
-     <height>17</height>
+     <height>22</height>
     </rect>
    </property>
   </widget>

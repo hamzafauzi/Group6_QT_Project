@@ -35,7 +35,7 @@ private:
     QProcess *m_process;
     QString m_tempDir;
     QString m_sketchPath;
-
+    QString formatOutput(const QString &text, bool isError);
     bool createTempSketch(const QString &code);
     void cleanup();
     QString findArduinoCLI();
