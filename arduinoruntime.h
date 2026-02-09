@@ -7,7 +7,8 @@
 class ArduinoRuntime : public QObject
 {
     Q_OBJECT
-
+signals:
+    void debugOutput(const QString& html);
 public:
     explicit ArduinoRuntime(ArduinoItem* arduino, QObject* parent=nullptr);
 

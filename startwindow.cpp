@@ -40,9 +40,29 @@ StartWindow::StartWindow(QWidget *parent)
     // connect build button
     connect(ui->pushButton_build, &QPushButton::clicked, this, [=]()
             {
+    // Act like Interrupt button was pressed
+    ui->pushButton_interrupt->click();
+
+    // Clear previous outputs
+    if (ui->textEdit_compilation_output)
+        ui->textEdit_compilation_output->clear();
+
+    if (ui->textEdit_debug_output)
+        ui->textEdit_debug_output->clear();
+
     QString code = ui->textEdit_editor->toPlainText();
     m_compiler->compile(code); });
 
+    // Build result listener
+    connect(m_compiler, &ArduinoCompiler::compilationFinished, this, [=](bool success)
+            {
+                m_buildSuccessful = success;
+
+                if (success)
+                    m_codeDirty = false; // Build başarılıysa kod artık "temiz"
+
+                updateRunButtons(); // Buton renklerini güncelle
+            });
     //----------------Compile END----------------
 
     // Create scene
@@ -96,18 +116,49 @@ StartWindow::StartWindow(QWidget *parent)
                 new_element->raise();          // Bring to front
                 new_element->activateWindow(); // Activate the window
             });
-
+    // ---------------Simulation Runtime-----------------
     ArduinoRuntime *runtime = new ArduinoRuntime(arduino, this);
     connect(ui->pushButton_run, &QPushButton::clicked, this, [=]
             {
-        qDebug() << "Run";
-        runtime->loadCode(ui->textEdit_editor->toPlainText());
-        runtime->start(); });
+    if (!m_buildSuccessful || m_codeDirty)
+    {
+        ui->textEdit_compilation_output->append(
+            "<span style='color:#E57373;'>Without build, can't run the code</span>");
+        return;
+    }
+
+    qDebug() << "Run";
+    runtime->loadCode(ui->textEdit_editor->toPlainText());
+    runtime->start(); });
 
     connect(ui->pushButton_interrupt, &QPushButton::clicked, this, [=]
             {
-        qDebug() << "Interrupt";
-        runtime->stop(); });
+    if (!m_buildSuccessful || m_codeDirty)
+    {
+        ui->textEdit_compilation_output->append(
+            "<span style='color:#E57373;'>Without build, can't run the code</span>");
+        return;
+    }
+    qDebug() << "Interrupt";
+    runtime->stop(); });
+
+    connect(runtime, &ArduinoRuntime::debugOutput, this, [=](const QString &html)
+            { ui->textEdit_debug_output->append(html); });
+    //---------------Simulation Runtime END-----------------
+
+    //---------------Build State Management-----------------
+    m_buildSuccessful = false;
+    m_codeDirty = false;
+    updateRunButtons();
+    connect(ui->textEdit_editor, &QTextEdit::textChanged, this, [=]()
+            {
+    m_codeDirty = true;
+    m_buildSuccessful = false;
+    updateRunButtons(); });
+}
+void StartWindow::updateRunButtons()
+{
+    // improvement UI here, for button colors
 }
 
 StartWindow::~StartWindow()
@@ -120,7 +171,7 @@ QPointF StartWindow::getRandomPosition()
     // Base position at 30, 30 with random offset
     int randomX = QRandomGenerator::global()->bounded(-50, 51); // -50 to +50
     int randomY = QRandomGenerator::global()->bounded(-50, 51); // -50 to +50
-    return QPointF(30 + randomX, 30 + randomY);
+    return QPointF(100 + randomX, 100 + randomY);
 }
 
 void StartWindow::onLedRequested()

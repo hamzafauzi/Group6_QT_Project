@@ -135,7 +135,7 @@
          <bool>true</bool>
         </property>
         <property name="text">
-         <string>Build</string>
+         <string>✔Build(CLI)</string>
         </property>
         <property name="flat">
          <bool>true</bool>
@@ -153,7 +153,7 @@
          <bool>true</bool>
         </property>
         <property name="text">
-         <string>Run</string>
+         <string>▶Run(Simulation)</string>
         </property>
         <property name="flat">
          <bool>true</bool>
@@ -171,7 +171,7 @@
          <bool>true</bool>
         </property>
         <property name="text">
-         <string>Interrupt</string>
+         <string>●Interrupt(Simulation)</string>
         </property>
         <property name="flat">
          <bool>true</bool>
@@ -205,7 +205,7 @@
          <string notr="true"/>
         </property>
         <property name="text">
-         <string>Add new Control Element</string>
+         <string>✚Add New Control Element</string>
         </property>
         <property name="flat">
          <bool>true</bool>
@@ -716,7 +716,7 @@
 color: black;</string>
         </property>
         <property name="text">
-         <string>Compilation Output (Arduino CLI)</string>
+         <string>✔Compilation Output (Arduino CLI)</string>
         </property>
        </widget>
       </item>
@@ -732,7 +732,7 @@ color: black;</string>
 color: black;</string>
         </property>
         <property name="text">
-         <string>Debug Output (Arduino Logic)</string>
+         <string>▶Debug Output (Arduino Logic)</string>
         </property>
        </widget>
       </item>

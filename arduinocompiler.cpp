@@ -39,7 +39,7 @@ QString ArduinoCompiler::findArduinoCLI()
     QStringList possiblePaths;
 
     // ===== Team-specific overrides (add yours on top) =====
-    possiblePaths << "C:/Users/ibaha/arduino-cli_1.4.1_Windows_64bit/arduino-cli2.exe"; // Safa
+    possiblePaths << "C:/Users/ibaha/arduino-cli_1.4.1_Windows_64bit/arduino-cli.exe"; // Safa
     // possiblePaths << "C:/Users/Vincent/arduino-cli/arduino-cli.exe";               // Vincent add here (example)
 
     // ===== Common install locations =====

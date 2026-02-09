@@ -24,8 +24,11 @@ private slots:
     void onResistorRequested();
     void onButtonRequested();
     void onConnectionLogged(const QString &message);
+    void updateRunButtons();
 
 private:
+    bool m_buildSuccessful = false;// for build status tracking
+    bool m_codeDirty = false;// to track if code has changed since last successful build
     Ui::StartWindow *ui;
     ArduinoCompiler *m_compiler;
     Add_New_Element *new_element;
