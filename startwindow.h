@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include "addNewElement.h"
 #include "arduinoCompiler.h"
+#include "info.h"
 class SimulatorScene;
 
 namespace Ui
@@ -32,6 +33,7 @@ private:
     Ui::StartWindow *ui;
     ArduinoCompiler *m_compiler;
     Add_New_Element *new_element;
+    Info *info_window;
     SimulatorScene *m_scene;
 
     QPointF getRandomPosition();

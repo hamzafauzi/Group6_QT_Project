@@ -12,6 +12,7 @@
 #include "arduinoitem.h"
 #include "arduinoruntime.h"
 #include "arduinoCompiler.h"
+#include "info.h"
 
 StartWindow::StartWindow(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::StartWindow), new_element(nullptr)
@@ -116,6 +117,14 @@ StartWindow::StartWindow(QWidget *parent)
                 new_element->raise();          // Bring to front
                 new_element->activateWindow(); // Activate the window
             });
+
+    //new info button code//
+    connect(ui->pushButton_info, &QPushButton::clicked, this, [this](){
+        info_window = new Info(this);
+        info_window->show();
+        info_window->raise();          // Bring to front
+    });
+
     // ---------------Simulation Runtime-----------------
     ArduinoRuntime *runtime = new ArduinoRuntime(arduino, this);
     connect(ui->pushButton_run, &QPushButton::clicked, this, [=]

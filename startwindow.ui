@@ -179,6 +179,19 @@
        </widget>
       </item>
       <item>
+       <widget class="QPushButton" name="pushButton_info">
+        <property name="autoFillBackground">
+         <bool>true</bool>
+        </property>
+        <property name="text">
+         <string>Info</string>
+        </property>
+        <property name="flat">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
        <spacer name="horizontalSpacer">
         <property name="orientation">
          <enum>Qt::Orientation::Horizontal</enum>
@@ -746,7 +759,7 @@ color: black;</string>
      <x>0</x>
      <y>0</y>
      <width>890</width>
-     <height>22</height>
+     <height>33</height>
     </rect>
    </property>
   </widget>
