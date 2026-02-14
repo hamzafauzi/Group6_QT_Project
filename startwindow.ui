@@ -745,7 +745,7 @@ color: black;</string>
 color: black;</string>
         </property>
         <property name="text">
-         <string>▶Debug Output (Arduino Logic)</string>
+         <string>▶Debug Output(Arduino/Sim. Logic)</string>
         </property>
        </widget>
       </item>
@@ -759,7 +759,7 @@ color: black;</string>
      <x>0</x>
      <y>0</y>
      <width>890</width>
-     <height>33</height>
+     <height>22</height>
     </rect>
    </property>
   </widget>

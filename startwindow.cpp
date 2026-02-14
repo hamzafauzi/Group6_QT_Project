@@ -77,14 +77,18 @@ StartWindow::StartWindow(QWidget *parent)
     // initial code for editor
     ui->textEdit_editor->setText(
         "void setup() {\n"
+        "  pinMode(8, OUTPUT);\n"
         "  pinMode(7, OUTPUT);\n"
+        "  pinMode(6, INPUT);\n"
         "}\n"
         "\n"
         "void loop() {\n"
-        "  digitalWrite(7, HIGH);\n"
-        "  delay(500);\n"
-        "  digitalWrite(7, LOW);\n"
-        "  delay(500);\n"
+        "  if(digitalRead(6))digitalWrite(7, HIGH);\n"
+        "  else digitalWrite(7, LOW);\n"
+        "  delay(200);\n"
+        "  digitalWrite(8, LOW);\n"
+        "  delay(250);\n"
+        "  digitalWrite(8, HIGH);\n"
         "}\n");
 
     // Store diagram reference in scene so pins can access it
@@ -118,38 +122,39 @@ StartWindow::StartWindow(QWidget *parent)
                 new_element->activateWindow(); // Activate the window
             });
 
-    //new info button code//
-    connect(ui->pushButton_info, &QPushButton::clicked, this, [this](){
-        info_window = new Info(this);
-        info_window->show();
-        info_window->raise();          // Bring to front
-    });
+    // new info button code//
+    connect(ui->pushButton_info, &QPushButton::clicked, this, [this]()
+            {
+                info_window = new Info(this);
+                info_window->show();
+                info_window->raise(); // Bring to front
+            });
 
     // ---------------Simulation Runtime-----------------
     ArduinoRuntime *runtime = new ArduinoRuntime(arduino, this);
     connect(ui->pushButton_run, &QPushButton::clicked, this, [=]
             {
-    if (!m_buildSuccessful || m_codeDirty)
-    {
-        ui->textEdit_compilation_output->append(
-            "<span style='color:#E57373;'>Without build, can't run the code</span>");
-        return;
-    }
+        if (!m_buildSuccessful || m_codeDirty)
+        {
+            ui->textEdit_compilation_output->append(
+                "<span style='color:#E57373;'>Without build, can't run the code</span>");
+            return;
+        }
 
-    qDebug() << "Run";
-    runtime->loadCode(ui->textEdit_editor->toPlainText());
-    runtime->start(); });
+        qDebug() << "Run";
+        runtime->loadCode(ui->textEdit_editor->toPlainText()); // get the code from editor and load to runtime
+        runtime->start(); });
 
     connect(ui->pushButton_interrupt, &QPushButton::clicked, this, [=]
             {
-    if (!m_buildSuccessful || m_codeDirty)
-    {
-        ui->textEdit_compilation_output->append(
-            "<span style='color:#E57373;'>Without build, can't run the code</span>");
-        return;
-    }
-    qDebug() << "Interrupt";
-    runtime->stop(); });
+        if (!m_buildSuccessful || m_codeDirty)
+        {
+            ui->textEdit_compilation_output->append(
+                "<span style='color:#E57373;'>Without build, can't run the code</span>");
+            return;
+        }
+        qDebug() << "Interrupt";
+        runtime->stop(); });
 
     connect(runtime, &ArduinoRuntime::debugOutput, this, [=](const QString &html)
             { ui->textEdit_debug_output->append(html); });
@@ -161,9 +166,9 @@ StartWindow::StartWindow(QWidget *parent)
     updateRunButtons();
     connect(ui->textEdit_editor, &QTextEdit::textChanged, this, [=]()
             {
-    m_codeDirty = true;
-    m_buildSuccessful = false;
-    updateRunButtons(); });
+        m_codeDirty = true;
+        m_buildSuccessful = false;
+        updateRunButtons(); });
 }
 void StartWindow::updateRunButtons()
 {

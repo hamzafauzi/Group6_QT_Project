@@ -108,6 +108,11 @@ void PinItem::updateState()
 
 void PinItem::setHigh()
 {
+    //- Ground pins should never change state - always stay LOW/gray
+    if(m_type == PinType::Ground){
+        return;
+    }
+    
     if (m_isHigh && this->m_type != Power) return; // allready HIGH and not PowerPin → do nothing
 
     m_isHigh = true;
@@ -151,6 +156,19 @@ void PinItem::setLow()
         }
         return;
     }
+    
+    //- Ground pins should always stay LOW and dark gray - force visual update
+    if(m_type == PinType::Ground){
+        m_isHigh = false;
+        QPixmap pixmap(10,10);
+        pixmap.fill(Qt::transparent);
+        QPainter p(&pixmap);
+        p.setBrush(Qt::darkGray);  //- Always dark gray for ground
+        p.drawEllipse(0,0,10,10);
+        p.end();
+        setPixmap(pixmap);
+        return;
+    }
 
     if (!m_isHigh) return; // allready LOW → do nothing
     m_isHigh = false;
@@ -158,7 +176,20 @@ void PinItem::setLow()
     QPixmap pixmap(10,10);
     pixmap.fill(Qt::transparent);
     QPainter p(&pixmap);
-    p.setBrush(Qt::red); // LOW = rot
+    
+    //- Fixed: Set proper color based on pin type when going LOW
+    switch (m_type) {
+    case PinType::Ground:
+        p.setBrush(Qt::darkGray);  //- Ground pins show dark gray
+        break;
+    case PinType::Led:
+        p.setBrush(Qt::white);  //- LED pins show white
+        break;
+    default:
+        p.setBrush(Qt::gray);  //- Regular pins show gray when LOW
+        break;
+    }
+    
     p.drawEllipse(0,0,10,10);
     p.end();
     setPixmap(pixmap);
