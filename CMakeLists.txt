@@ -26,12 +26,10 @@ set(PROJECT_SOURCES
 
 
 
-    arduinoparser.cpp
-    arduinoparser.h
+
     arduinocompiler.cpp
     arduinocompiler.h
-    simulationengine.cpp
-    simulationengine.h
+
 
 
 
