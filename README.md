@@ -7,8 +7,31 @@
 **Group 6:** Vincent Siebert (43130), Hamza Mubashir Fauzi (471554), Wasif Gul (477118), Hüseyin Safa Ünlü (477019)
 
 ## Project Overview
+This project:Implements an Arduino simulator using Qt 6 and C++.
+The primary objective is to learn or improve skills in programming with C++, developing
+graphical user interfaces (GUI) and controlling external processes.
 
-This project implements a simple Arduino code editor, build pipeline, and simulator UI using Qt and CMake. The user edits Arduino-like code in the left text box, builds the code, and runs a simulator that interprets a restricted subset of Arduino functionality.
+1. The GUI is composed of multiple sections:
+i. a control panel including at least two control buttons (Build and Run)
+ii. a text editor for users to write the main code
+iii. a simulator that displays connections and animations
+iv. a panel showing status and debug messages from the main software and
+v. the Arduino software compilation output.
+2. The user writes the Arduino code, and upon clicking the Build button, the main
+software compiles the code and displays the outcome in the compilation/debug
+section.
+3. The main software performs compilation using available tools for Windows or Linux
+environments. These tools are basic Arduino compilers and must be integrated into the
+main software. In other words, students shall not attempt on compiling the software
+with their own efforts.
+4. The main software does not allow the simulation to run unless the compilation is
+completed successfully.
+5. All activities and software-related issues are reported in the debug messages section.
+6. Although the external compiler is responsible for syntax checking, students are
+expected to interpret the code logic and perform the simulation accordingly.
+7. The number of external components is kept to a minimum, such as LEDs, resistors,
+and buttons. Users are allowed to add and remove multiple of these components from
+the simulator. Full freedom is provided to create connectio
 
 ## How it works
 
@@ -49,17 +72,6 @@ Using Qt Creator (recommended):
 - Configure an appropriate kit (Qt + compiler), configure the CMake build.
 - Build the project and run the application from Qt Creator.
 
-Command-line (CMake):
-
-```powershell
-mkdir build
-cd build
-cmake ..
-cmake --build .
-```
-
-Then run the produced executable from the `build` output directory.
-
 ## Where to look in source
 
 - Main UI and app logic: `main.cpp`, `mainwindow.ui`, and related items such as `simulatorscene.cpp` and `simulationengine.cpp`.
@@ -71,26 +83,6 @@ Then run the produced executable from the `build` output directory.
 This repository was created as part of the WS 25/26 course assignment for Prof. Dr.-Ing. Mürsel Yildiz.
 
 ---
-
-**Architecture Diagram**
-
-Below is a small ASCII diagram showing how the main `.cpp` files relate. Arrows use `----` and `---->` as requested.
-
-main.cpp ----> `startwindow.cpp` <---- `mainwindow.ui`
-                 |
-                 |----> `simulatorscene.cpp` ----> `simulationengine.cpp`
-                 |                             |
-                 |                             ----> `arduinoruntime.cpp`
-                 |
-                 |----> `addNewElement.cpp` ----> `addNewElement.ui`
-                 |
-                 |----> `arduinocompiler.cpp` ----> `arduinoparser.cpp` ----> `arduinoruntime.cpp`
-                 |
-                 |----> `arduinoitem.cpp`
-                 |
-                 |----> `componentitem.cpp` ----> (`pinitem.cpp`, `resistoritem.cpp`, `leditem.cpp`, `buttonitem.cpp`, `cableitem.cpp`)
-                 |
-                 |----> `info.cpp`
 
 **Notes**
 
