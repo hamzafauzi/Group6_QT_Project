@@ -16,7 +16,7 @@ LedItem::LedItem(QGraphicsItem* parent)
     m_signalPin->setPos(20, 70);
 
     // Ground (Kathode)
-    m_groundPin = new PinItem(PinItem::PinType::Ground, this);
+    m_groundPin = new PinItem(PinItem::PinType::Digital, this);
     m_groundPin->setPos(50, 70);
 
     connect(m_signalPin, &PinItem::stateChanged, this, &LedItem::setOn);
