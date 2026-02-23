@@ -112,7 +112,3 @@ This repository was created as part of the WS 25/26 course assignment for Prof. 
 **CLI path & build reminder**
 
 - If `arduino-cli` is not detected, update the team-specific override in `arduinocompiler.cpp` (near the top of `ArduinoCompiler::findArduinoCLI()`) to point to your `arduino-cli.exe` location, or install `arduino-cli` and add it to your `PATH`.
-
----
-
-If you'd like, I can also convert this ASCII diagram to a Mermaid diagram and embed it, or place the architecture content into a separate `ARCHITECTURE.md`. Tell me which you prefer and I'll update the repo accordingly.
