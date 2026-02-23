@@ -1,3 +1,5 @@
+Discarted project commits: https://github.com/hamzafauzi/qt6-cpp-project-group6
+
 # Embedded Software Design and Programming — Exam Project (WS 25/26)
 
 **Course:** Embedded Software Design and Programming
